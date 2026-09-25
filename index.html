@@ -1307,7 +1307,16 @@
 
     const platformMap = {};
     activeContent.forEach(c => {
-        const pName = c.platform || 'Other';
+        // Cek berbagai kemungkinan nama properti platform
+        let pName = c.platform || c.Platform || c.channel || c.Channel || 'Other';
+        
+        // Normalisasi teks
+        const raw = String(pName).trim().toLowerCase();
+        if (raw.includes('tiktok')) pName = 'TikTok';
+        else if (raw.includes('instagram') || raw.includes('ig')) pName = 'Instagram';
+        else if (raw.includes('youtube') || raw.includes('yt')) pName = 'YouTube';
+        else if (raw.includes('facebook') || raw.includes('fb')) pName = 'Facebook';
+        
         platformMap[pName] = (platformMap[pName] || 0) + safeNum(c.views);
     });
 
