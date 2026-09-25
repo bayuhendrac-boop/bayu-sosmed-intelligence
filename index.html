@@ -1304,32 +1304,15 @@
         }
     });
 
-   const platformMap = {
-        'TikTok': 0,
-        'Instagram': 0,
-        'YouTube': 0,
-        'Facebook': 0
-    };
+    // === FIX BUG: Distribusi Platform sekarang memakai platformId asli dari data (bukan tebakan) ===
+    const platformMap = {};
+    db.platforms.forEach(p => { platformMap[p.name] = 0; });
 
     activeContent.forEach(c => {
-        let pRaw = (c.platform || c.Platform || c.channel || c.Channel || c.source || c.Source || '').toString().trim();
-        let fullText = (pRaw + ' ' + (c.title || '') + ' ' + (c.caption || '') + ' ' + (c.url || '') + ' ' + (c.link || '') + ' ' + (c.id || '')).toLowerCase();
-
-        let views = safeNum(c.views);
-
-        if (fullText.includes('instagram') || fullText.includes('ig') || fullText.includes('reels') || fullText.includes('instagr.am')) {
-            platformMap['Instagram'] += views;
-        } else if (fullText.includes('youtube') || fullText.includes('yt') || fullText.includes('shorts') || fullText.includes('youtu.be')) {
-            platformMap['YouTube'] += views;
-        } else if (fullText.includes('facebook') || fullText.includes('fb') || fullText.includes('fb.watch')) {
-            platformMap['Facebook'] += views;
-        } else if (fullText.includes('tiktok') || fullText.includes('tt') || fullText.includes('vt.tiktok')) {
-            platformMap['TikTok'] += views;
-        } else {
-            const keys = ['TikTok', 'Instagram', 'YouTube', 'Facebook'];
-            const charCodeSum = (c.id || c.title || 'a').toString().charCodeAt(0);
-            const assignedPlatform = keys[charCodeSum % keys.length];
-            platformMap[assignedPlatform] += views;
+        const plat = db.platforms.find(p => p.id === c.platformId);
+        const views = safeNum(c.views);
+        if (plat) {
+            platformMap[plat.name] += views;
         }
     });
 
