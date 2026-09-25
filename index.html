@@ -11,7 +11,7 @@
     <!-- SheetJS (XLSX) CDN -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Chart.js CDN (untuk grafik tren growth) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -1236,7 +1236,14 @@
             `;
             renderDashboardCharts(periodDays);
         }
-        function renderDashboardCharts(periodDays) {
+       function renderDashboardCharts(periodDays) {
+    // Proteksi jika Chart.js belum selesai dimuat oleh browser
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js belum siap, memuat ulang dalam 200ms...');
+        setTimeout(() => renderDashboardCharts(periodDays), 200);
+        return;
+    }
+
     const ctxTrend = document.getElementById('trendChart');
     const ctxPlatform = document.getElementById('platformChart');
     if (!ctxTrend || !ctxPlatform) return;
@@ -1317,39 +1324,6 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { position: 'bottom', labels: { color: '#f8fafc' } } }
-        }
-    });
-}
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: '#94a3b8' } } },
-            scales: {
-                x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } }
-            }
-        }
-    });
-
-    const platformMap = {};
-    activeContent.forEach(c => {
-        const pName = c.platform || 'Other';
-        platformMap[pName] = (platformMap[pName] || 0) + safeNum(c.views);
-    });
-
-    window.platformChartInstance = new Chart(ctxPlatform, {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(platformMap).length ? Object.keys(platformMap) : ['No Data'],
-            datasets: [{
-                data: Object.values(platformMap).length ? Object.values(platformMap) : [1],
-                backgroundColor: ['#3b82f6', '#ec4899', '#f59e0b', '#8b5cf6', '#10b981']
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } }
         }
     });
 }
