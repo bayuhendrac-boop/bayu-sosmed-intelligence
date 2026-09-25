@@ -1307,16 +1307,24 @@
 
     const platformMap = {};
     activeContent.forEach(c => {
-        // Cek berbagai kemungkinan nama properti platform
-        let pName = c.platform || c.Platform || c.channel || c.Channel || 'Other';
-        
-        // Normalisasi teks
-        const raw = String(pName).trim().toLowerCase();
-        if (raw.includes('tiktok')) pName = 'TikTok';
-        else if (raw.includes('instagram') || raw.includes('ig')) pName = 'Instagram';
-        else if (raw.includes('youtube') || raw.includes('yt')) pName = 'YouTube';
-        else if (raw.includes('facebook') || raw.includes('fb')) pName = 'Facebook';
-        
+        // 1. Ambil dari properti platform/channel jika ada
+        let pName = c.platform || c.Platform || c.channel || c.Channel || c.source || c.Source || '';
+
+        // 2. Jika masih kosong, cek teks dari title/caption/url/id untuk menebak platformnya
+        const fullText = String(pName + ' ' + (c.title || '') + ' ' + (c.caption || '') + ' ' + (c.url || '')).toLowerCase();
+
+        if (fullText.includes('tiktok') || fullText.includes('tt')) {
+            pName = 'TikTok';
+        } else if (fullText.includes('instagram') || fullText.includes('ig') || fullText.includes('reels')) {
+            pName = 'Instagram';
+        } else if (fullText.includes('youtube') || fullText.includes('yt') || fullText.includes('shorts')) {
+            pName = 'YouTube';
+        } else if (fullText.includes('facebook') || fullText.includes('fb')) {
+            pName = 'Facebook';
+        } else if (!pName) {
+            pName = 'Other';
+        }
+
         platformMap[pName] = (platformMap[pName] || 0) + safeNum(c.views);
     });
 
