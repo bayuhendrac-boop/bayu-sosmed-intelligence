@@ -1,0 +1,2712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BAYU - Social Intelligence V2</title>
+    <!-- Tailwind CSS CDN for modern SaaS UI styling -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS (XLSX) CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Chart.js CDN (untuk grafik tren growth) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .custom-transition { transition: all 0.2s ease-in-out; }
+    </style>
+
+    <!-- Firebase SDK (compat build untuk CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/firebase@10.13.2/firebase-app-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/firebase@10.13.2/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/firebase@10.13.2/firebase-firestore-compat.js"></script>
+    <script>
+        // ============================================================
+        // FIREBASE CONFIG TERINTEGRASI UNTUK BAYU SOCIAL INTELLIGENCE
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGWCpJvztT9717SJIe2HnvI7UhsB7YwnY",
+            authDomain: "bayu-social-intelligence.firebaseapp.com",
+            projectId: "bayu-social-intelligence",
+            storageBucket: "bayu-social-intelligence.firebasestorage.app",
+            messagingSenderId: "18385753969",
+            appId: "1:18385753969:web:1f4df55f704754e07348d0",
+            measurementId: "G-NMV7BDB2R1"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const firestoreDB = firebase.firestore();
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Auth Screen (Daftar Akun / Login) -->
+    <div id="auth-screen" class="fixed inset-0 h-full w-full flex items-center justify-center bg-slate-950 px-4 z-[100]">
+        <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
+            <div id="auth-box"></div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Main Layout Container -->
+    <div id="app" class="hidden flex h-screen overflow-hidden">
+        
+        <!-- Sidebar Backdrop for Mobile -->
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 z-30 hidden lg:hidden"></div>
+
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out">
+            <!-- Brand Header -->
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h1 class="text-xl font-bold text-blue-600 tracking-tight flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line"></i> BAYU
+                    </h1>
+                    <p class="text-xs font-semibold text-slate-400 tracking-wider uppercase">Social Intelligence V2</p>
+                </div>
+                <button id="sidebar-close" class="lg:hidden text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 overflow-y-auto p-4 space-y-1">
+                <a href="#dashboard" data-page="dashboard" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition active">
+                    <i class="fa-solid fa-house w-5 text-center"></i> Dashboard
+                </a>
+                <a href="#overview" data-page="overview" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-solid fa-gauge-high w-5 text-center"></i> Overview
+                </a>
+                
+                <div class="pt-4 pb-1 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Platforms</div>
+                <a href="#platform-youtube" data-page="platform-youtube" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-brands fa-youtube w-5 text-center text-red-500"></i> YouTube
+                </a>
+                <a href="#platform-instagram" data-page="platform-instagram" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-brands fa-instagram w-5 text-center text-pink-500"></i> Instagram
+                </a>
+                <a href="#platform-tiktok" data-page="platform-tiktok" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-brands fa-tiktok w-5 text-center text-slate-900"></i> TikTok
+                </a>
+                <a href="#platform-facebook" data-page="platform-facebook" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-brands fa-facebook w-5 text-center text-blue-600"></i> Facebook
+                </a>
+
+                <div class="pt-4 pb-1 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Intelligence</div>
+                <a href="#content-intelligence" data-page="content-intelligence" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-solid fa-film w-5 text-center"></i> Content Intelligence
+                </a>
+                <a href="#audience" data-page="audience" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-solid fa-users w-5 text-center"></i> Audience
+                </a>
+                <a href="#growth" data-page="growth" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-solid fa-chart-line w-5 text-center"></i> Growth
+                </a>
+                <a href="#exposure-intelligence" data-page="exposure-intelligence" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-solid fa-bullseye w-5 text-center"></i> Exposure Intelligence
+                </a>
+                <a href="#recommendations" data-page="recommendations" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-solid fa-lightbulb w-5 text-center"></i> Recommendations
+                </a>
+                <a href="#reports" data-page="reports" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-solid fa-file-lines w-5 text-center"></i> Reports
+                </a>
+
+                <div class="pt-4 pb-1 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Data Management</div>
+                <a href="#import-analytics" data-page="import-analytics" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-solid fa-file-arrow-up w-5 text-center"></i> Import Analytics
+                </a>
+                <a href="#import-history" data-page="import-history" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Import History
+                </a>
+                <a href="#data-management" data-page="data-management" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-solid fa-database w-5 text-center"></i> Data Management
+                </a>
+                <a href="#settings" data-page="settings" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-solid fa-gear w-5 text-center"></i> Settings
+                </a>
+            </nav>
+
+            <!-- Storage & Status Footer -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50 space-y-2">
+                <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+                    <span id="data-freshness-text">Last Update: Never</span>
+                    <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-semibold text-[10px]">V2.0</span>
+                </div>
+                <div id="sidebar-user-info" class="text-[11px] text-slate-400 truncate"></div>
+                <button onclick="logout()" class="w-full flex items-center justify-center px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider rounded bg-slate-200 hover:bg-red-100 hover:text-red-700 text-slate-600 transition">
+                    <i class="fa-solid fa-right-from-bracket mr-2"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <!-- Top Header Bar -->
+            <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 lg:px-8 z-20 flex-shrink-0">
+                <div class="flex items-center gap-4">
+                    <button id="sidebar-toggle" class="lg:hidden text-slate-500 hover:text-slate-700 focus:outline-none p-1.5 rounded-lg hover:bg-slate-100">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                    <h2 id="page-title" class="text-lg font-bold text-slate-800 tracking-tight">Dashboard</h2>
+                </div>
+
+                <!-- Global Actions / Period Filter / CTA -->
+                <div class="flex items-center gap-3">
+                    <!-- Global Period Filter -->
+                    <div class="hidden md:flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
+                        <select id="global-period-filter" onchange="handlePeriodChange()" class="bg-transparent text-xs font-semibold text-slate-700 px-2 py-1 outline-none cursor-pointer">
+                            <option value="today">Today</option>
+                            <option value="7">7 Days</option>
+                            <option value="14">14 Days</option>
+                            <option value="30" selected>30 Days</option>
+                            <option value="60">60 Days</option>
+                            <option value="90">90 Days</option>
+                            <option value="all">All Time</option>
+                        </select>
+                    </div>
+
+                    <!-- Quick Action: Add Content -->
+                    <button onclick="openAddContentModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm custom-transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">Add Content</span>
+                    </button>
+
+                    <!-- Quick Action: Upload Analytics -->
+                    <button onclick="navigateTo('import-analytics')" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm custom-transition flex items-center gap-2">
+                        <i class="fa-solid fa-upload"></i> <span class="hidden sm:inline">Upload Analytics</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dynamic Page Views Container -->
+            <main id="main-content-area" class="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50">
+            </main>
+        </div>
+    </div>
+
+    <!-- MODALS CONTAINER -->
+
+    <!-- Add/Edit Content Modal -->
+    <div id="content-modal" class="fixed inset-0 bg-slate-900/50 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <h3 id="content-modal-title" class="text-base font-bold text-slate-800">Add New Content</h3>
+                <button onclick="closeContentModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <form id="content-form" onsubmit="handleContentFormSubmit(event)" class="space-y-4">
+                    <input type="hidden" id="form-content-internal-id">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Platform *</label>
+                            <select id="form-platform" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="youtube">YouTube</option>
+                                <option value="instagram">Instagram</option>
+                                <option value="tiktok">TikTok</option>
+                                <option value="facebook">Facebook</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Content Type *</label>
+                            <select id="form-content-type" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="Video">Video</option>
+                                <option value="Short Video">Short Video</option>
+                                <option value="Reel">Reel</option>
+                                <option value="Photo">Photo</option>
+                                <option value="Carousel">Carousel</option>
+                                <option value="Live">Live</option>
+                                <option value="Story">Story</option>
+                                <option value="Post">Post</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Content ID / URL</label>
+                            <input type="text" id="form-content-id" placeholder="e.g. YT_001 or URL" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Topic</label>
+                            <input type="text" id="form-topic" placeholder="e.g. Tutorial, Vlogs, Tech" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Content Title *</label>
+                        <input type="text" id="form-content-title" required placeholder="Enter compelling title..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Published Date *</label>
+                            <input type="date" id="form-published-date" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-100 pt-4 mt-2">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Metrics (Default 0, No Negatives)</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600 mb-1">Views</label>
+                                <input type="number" min="0" id="form-views" value="0" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600 mb-1">Reach</label>
+                                <input type="number" min="0" id="form-reach" value="0" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600 mb-1">Impressions</label>
+                                <input type="number" min="0" id="form-impressions" value="0" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600 mb-1">Likes</label>
+                                <input type="number" min="0" id="form-likes" value="0" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600 mb-1">Comments</label>
+                                <input type="number" min="0" id="form-comments" value="0" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600 mb-1">Shares</label>
+                                <input type="number" min="0" id="form-shares" value="0" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600 mb-1">Saves</label>
+                                <input type="number" min="0" id="form-saves" value="0" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600 mb-1">Watch Time (min)</label>
+                                <input type="number" min="0" id="form-watch-time" value="0" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-600 mb-1">Followers Gained</label>
+                                <input type="number" min="0" id="form-followers-gained" value="0" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                        <button type="button" onclick="closeContentModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg custom-transition">Cancel</button>
+                        <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg custom-transition">Save Content</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Growth Modal -->
+    <div id="growth-modal" class="fixed inset-0 bg-slate-900/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <h3 id="growth-modal-title" class="text-base font-bold text-slate-800">Add Follower Snapshot</h3>
+                <button onclick="closeGrowthModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6">
+                <form id="growth-form" onsubmit="handleGrowthFormSubmit(event)" class="space-y-4">
+                    <input type="hidden" id="form-growth-internal-id">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Platform *</label>
+                        <select id="form-growth-platform" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="youtube">YouTube</option>
+                            <option value="instagram">Instagram</option>
+                            <option value="tiktok">TikTok</option>
+                            <option value="facebook">Facebook</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Date *</label>
+                        <input type="date" id="form-growth-date" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Total Followers / Subscribers *</label>
+                        <input type="number" min="0" id="form-growth-followers" required value="0" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div class="flex items-center justify-end gap-3 pt-3">
+                        <button type="button" onclick="closeGrowthModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg">Cancel</button>
+                        <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg">Save Growth</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Dialog Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 text-center">
+            <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="confirm-title" class="text-base font-bold text-slate-800 mb-2">Are you sure?</h3>
+            <p id="confirm-message" class="text-xs text-slate-500 mb-6">This action cannot be undone.</p>
+            <div class="flex items-center justify-center gap-3">
+                <button id="confirm-cancel-btn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg w-full">Cancel</button>
+                <button id="confirm-ok-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg w-full">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Detail Modal -->
+    <div id="content-detail-modal" class="fixed inset-0 bg-slate-900/50 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-blue-600"></i> Content Deep Dive Intelligence
+                </h3>
+                <button onclick="closeContentDetailModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="content-detail-body" class="p-6 overflow-y-auto flex-1 space-y-6">
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                <div class="text-xs text-slate-400" id="content-detail-footer-info">Source: Manual</div>
+                <button onclick="closeContentDetailModal()" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-lg">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION CORE -->
+    <script>
+        /* ==========================================
+           1. DATABASE & STATE MANAGEMENT (1 USER 1 DATA)
+           ========================================== */
+        
+        // TEMPLATE BASE DATABASE KOSONG UNTUK PENDAFTAR BARU
+        function createEmptyDatabase() {
+            return {
+                platforms: [
+                    { id: 'youtube', name: 'YouTube', color: '#ef4444', icon: 'fa-youtube' },
+                    { id: 'instagram', name: 'Instagram', color: '#ec4899', icon: 'fa-instagram' },
+                    { id: 'tiktok', name: 'TikTok', color: '#0f172a', icon: 'fa-tiktok' },
+                    { id: 'facebook', name: 'Facebook', color: '#2563eb', icon: 'fa-facebook' }
+                ],
+                content: [],
+                growth: [],
+                imports: [],
+                settings: {
+                    dateFormat: 'YYYY-MM-DD',
+                    numberFormat: 'standard',
+                    defaultPeriod: '30'
+                },
+                version: '2.0'
+            };
+        }
+
+        let db = createEmptyDatabase();
+
+        // REFERENSI FIRESTORE TERISOLASI (1 USER 1 DATA)
+        const USER_DOC_REF = (uid) => firestoreDB.collection('users').doc(uid);
+        let currentUser = null;
+        let firestoreUnsub = null;
+        let suppressNextSnapshotRender = false;
+
+        function saveDatabase() {
+            try {
+                updateLastUpdatedTimestamp();
+                if (!currentUser) return;
+                suppressNextSnapshotRender = true;
+                USER_DOC_REF(currentUser.uid).set(db)
+                    .catch(err => {
+                        console.error('Storage save failed:', err);
+                        showToast('Failed to save data. Check your internet connection.', 'error');
+                    });
+            } catch (e) {
+                console.error('Storage save failed:', e);
+                showToast('Failed to save data.', 'error');
+            }
+        }
+
+        function escapeHTML(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function updateLastUpdatedTimestamp() {
+            const el = document.getElementById('data-freshness-text');
+            if (!el) return;
+            const now = new Date();
+            el.textContent = `Last Update: ${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+        }
+
+        /* ==========================================
+           1b. AUTH SYSTEM (Firebase Authentication)
+           ========================================== */
+        function showApp() {
+            document.getElementById('auth-screen').classList.add('hidden');
+            const appEl = document.getElementById('app');
+            appEl.classList.remove('hidden');
+            appEl.classList.add('flex');
+            const userInfo = document.getElementById('sidebar-user-info');
+            if (userInfo && currentUser) userInfo.innerHTML = `<i class="fa-solid fa-circle-user mr-1"></i> ${escapeHTML(currentUser.email)}`;
+            const initialHash = window.location.hash.substring(1) || 'dashboard';
+            navigateTo(initialHash);
+        }
+
+        function showAuthScreen(mode) {
+            const appEl = document.getElementById('app');
+            appEl.classList.add('hidden');
+            appEl.classList.remove('flex');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            if (mode === 'register') renderRegisterForm();
+            else renderLoginForm();
+        }
+
+        function renderRegisterForm() {
+            document.getElementById('auth-box').innerHTML = `
+                <div class="text-center mb-6">
+                    <div class="w-14 h-14 mx-auto rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-2xl shadow-md mb-3"><i class="fa-solid fa-chart-line"></i></div>
+                    <h1 class="text-white font-bold text-xl">Daftar Akun Baru</h1>
+                    <p class="text-slate-400 text-xs mt-2">Buat workspace analitik pribadi Anda di BAYU V2.</p>
+                </div>
+                <form id="register-form" class="space-y-4" onsubmit="handleRegisterSubmit(event)">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Email</label>
+                        <input type="email" id="register-email" required autocomplete="username" class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Password (min. 6 karakter)</label>
+                        <input type="password" id="register-password" required minlength="6" autocomplete="new-password" class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <p id="register-error" class="text-rose-400 text-xs hidden"></p>
+                    <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition">Daftar &amp; Masuk</button>
+                </form>
+                <button onclick="showAuthScreen('login')" class="w-full mt-4 text-xs text-slate-500 hover:text-slate-300 transition">Sudah punya akun? Masuk di sini</button>
+            `;
+        }
+
+        function renderLoginForm() {
+            document.getElementById('auth-box').innerHTML = `
+                <div class="text-center mb-6">
+                    <div class="w-14 h-14 mx-auto rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-2xl shadow-md mb-3"><i class="fa-solid fa-chart-line"></i></div>
+                    <h1 class="text-white font-bold text-xl">Masuk ke BAYU</h1>
+                    <p class="text-slate-400 text-xs mt-1">Social Intelligence V2</p>
+                </div>
+                <form id="login-form" class="space-y-4" onsubmit="handleLoginSubmit(event)">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Email</label>
+                        <input type="email" id="login-email" required autocomplete="username" class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Password</label>
+                        <input type="password" id="login-password" required autocomplete="current-password" class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <p id="login-error" class="text-rose-400 text-xs hidden"></p>
+                    <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition">Masuk</button>
+                </form>
+                <div class="flex justify-between mt-4">
+                    <button onclick="handleForgotPassword()" class="text-xs text-slate-500 hover:text-slate-300 transition">Lupa password?</button>
+                    <button onclick="showAuthScreen('register')" class="text-xs text-slate-500 hover:text-slate-300 transition">Buat akun baru</button>
+                </div>
+            `;
+        }
+
+        function friendlyAuthError(err) {
+            const map = {
+                'auth/email-already-in-use': 'Email ini sudah terdaftar. Silakan masuk (login) saja.',
+                'auth/invalid-email': 'Format email tidak valid.',
+                'auth/weak-password': 'Password terlalu lemah, minimal 6 karakter.',
+                'auth/user-not-found': 'Email belum terdaftar.',
+                'auth/wrong-password': 'Password salah.',
+                'auth/invalid-credential': 'Email atau password salah.',
+                'auth/too-many-requests': 'Terlalu banyak percobaan gagal. Coba lagi beberapa saat lagi.'
+            };
+            return map[err.code] || err.message;
+        }
+
+        function handleRegisterSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value;
+            const errEl = document.getElementById('register-error');
+            errEl.classList.add('hidden');
+            auth.createUserWithEmailAndPassword(email, password)
+                .catch(err => {
+                    errEl.textContent = friendlyAuthError(err);
+                    errEl.classList.remove('hidden');
+                });
+        }
+
+        function handleLoginSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const errEl = document.getElementById('login-error');
+            errEl.classList.add('hidden');
+            auth.signInWithEmailAndPassword(email, password)
+                .catch(err => {
+                    errEl.textContent = friendlyAuthError(err);
+                    errEl.classList.remove('hidden');
+                });
+        }
+
+        function handleForgotPassword() {
+            const email = prompt('Masukkan email akun kamu untuk menerima link reset password:');
+            if (!email) return;
+            auth.sendPasswordResetEmail(email)
+                .then(() => alert('Link reset password sudah dikirim ke ' + email + '. Cek inbox/spam folder.'))
+                .catch(err => alert(friendlyAuthError(err)));
+        }
+
+        function logout() {
+            auth.signOut();
+        }
+
+        // FIREBASE AUTHENTICATION LISTENER DENGAN SIFAT MULTI-TENANT ISOLATED (1 USER 1 DATA)
+        auth.onAuthStateChanged(user => {
+            if (firestoreUnsub) { firestoreUnsub(); firestoreUnsub = null; }
+            if (user) {
+                currentUser = user;
+                firestoreUnsub = USER_DOC_REF(user.uid)
+                    .onSnapshot(docSnap => {
+                        if (docSnap.exists) {
+                            db = docSnap.data();
+                        } else {
+                            // User Baru -> Buat Dokumen Kosong Terisolasi
+                            db = createEmptyDatabase();
+                            USER_DOC_REF(user.uid).set(db).catch(console.error);
+                        }
+                        showApp();
+                        if (!suppressNextSnapshotRender) {
+                            navigateTo(currentRoute);
+                        }
+                        suppressNextSnapshotRender = false;
+                    }, err => {
+                        console.error('Firestore listener error:', err);
+                        alert('Gagal terhubung ke database. Cek koneksi internet & Firebase config kamu.');
+                    });
+            } else {
+                currentUser = null;
+                showAuthScreen('login');
+            }
+        });
+
+        /* ==========================================
+           2. ROUTER & NAVIGATION
+           ========================================== */
+        const routes = {
+            'dashboard': renderDashboard,
+            'overview': renderOverview,
+            'platform-youtube': () => renderPlatformDetail('youtube'),
+            'platform-instagram': () => renderPlatformDetail('instagram'),
+            'platform-tiktok': () => renderPlatformDetail('tiktok'),
+            'platform-facebook': () => renderPlatformDetail('facebook'),
+            'content-intelligence': renderContentIntelligence,
+            'audience': renderAudience,
+            'growth': renderGrowth,
+            'exposure-intelligence': renderExposureIntelligence,
+            'recommendations': renderRecommendations,
+            'reports': renderReports,
+            'import-analytics': renderImportAnalytics,
+            'import-history': renderImportHistory,
+            'data-management': renderDataManagement,
+            'settings': renderSettings
+        };
+
+        let currentRoute = 'dashboard';
+
+        function navigateTo(routeKey) {
+            if (!routes[routeKey]) routeKey = 'dashboard';
+            currentRoute = routeKey;
+            
+            window.location.hash = routeKey;
+
+            document.querySelectorAll('.nav-link').forEach(link => {
+                const page = link.getAttribute('data-page');
+                if (page === routeKey) {
+                    link.classList.add('bg-blue-50', 'text-blue-600', 'font-semibold');
+                    link.classList.remove('text-slate-600');
+                } else {
+                    link.classList.remove('bg-blue-50', 'text-blue-600', 'font-semibold');
+                    link.classList.add('text-slate-600');
+                }
+            });
+
+            const titles = {
+                'dashboard': 'Social Intelligence Dashboard',
+                'overview': 'Executive Overview',
+                'platform-youtube': 'YouTube Platform Detail',
+                'platform-instagram': 'Instagram Platform Detail',
+                'platform-tiktok': 'TikTok Platform Detail',
+                'platform-facebook': 'Facebook Platform Detail',
+                'content-intelligence': 'Content Intelligence & Library',
+                'audience': 'Audience Analytics',
+                'growth': 'Followers & Growth Analytics',
+                'exposure-intelligence': 'Exposure Intelligence',
+                'recommendations': 'Actionable Recommendations',
+                'reports': 'Reports & Export Center',
+                'import-analytics': 'Upload File Analytics',
+                'import-history': 'Import History Management',
+                'data-management': 'Data Management Center',
+                'settings': 'Dashboard Settings'
+            };
+            const titleEl = document.getElementById('page-title');
+            if (titleEl) titleEl.textContent = titles[routeKey] || 'Dashboard';
+
+            closeMobileSidebar();
+
+            const mainArea = document.getElementById('main-content-area');
+            if (mainArea) {
+                mainArea.innerHTML = '';
+                routes[routeKey]();
+            }
+        }
+
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.substring(1) || 'dashboard';
+            if (routes[hash]) navigateTo(hash);
+        });
+
+        const sidebar = document.getElementById('sidebar');
+        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebarClose = document.getElementById('sidebar-close');
+
+        function openMobileSidebar() {
+            sidebar.classList.remove('-translate-x-full');
+            sidebarBackdrop.classList.remove('hidden');
+        }
+
+        function closeMobileSidebar() {
+            sidebar.classList.add('-translate-x-full');
+            sidebarBackdrop.classList.add('hidden');
+        }
+
+        if (sidebarToggle) sidebarToggle.addEventListener('click', openMobileSidebar);
+        if (sidebarClose) sidebarClose.addEventListener('click', closeMobileSidebar);
+        if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeMobileSidebar);
+
+        /* ==========================================
+           3. ANALYTICS ENGINE (CENTRALIZED MATH)
+           ========================================== */
+        
+        function safeNum(val) {
+            const num = parseFloat(val);
+            return (isNaN(num) || !isFinite(num)) ? 0 : num;
+        }
+
+        function getActivePeriodDays() {
+            const filterEl = document.getElementById('global-period-filter');
+            const val = filterEl ? filterEl.value : '30';
+            if (val === 'all' || val === 'today') return val;
+            return parseInt(val, 10) || 30;
+        }
+
+        function handlePeriodChange() {
+            navigateTo(currentRoute);
+        }
+
+        function filterRecordsByPeriod(records, dateKey = 'publishedDate', periodDays = null) {
+            if (periodDays === null) periodDays = getActivePeriodDays();
+            if (periodDays === 'all') return records;
+            
+            const now = new Date();
+            if (periodDays === 'today') {
+                const todayStr = now.toISOString().split('T')[0];
+                return records.filter(r => (r[dateKey] || '').startsWith(todayStr));
+            }
+
+            const cutoff = new Date();
+            cutoff.setDate(now.getDate() - periodDays);
+            
+            return records.filter(r => {
+                const dStr = r[dateKey];
+                if (!dStr) return false;
+                const d = new Date(dStr);
+                return d >= cutoff && d <= now;
+            });
+        }
+
+        function computeContentMetrics(c) {
+            const likes = safeNum(c.likes);
+            const comments = safeNum(c.comments);
+            const shares = safeNum(c.shares);
+            const saves = safeNum(c.saves);
+            const reactions = safeNum(c.reactions);
+            const reach = safeNum(c.reach);
+            const views = safeNum(c.views);
+            const followersGained = safeNum(c.followersGained);
+
+            const engagement = likes + comments + shares + saves + reactions;
+            const engagementRate = reach > 0 ? (engagement / reach) * 100 : (views > 0 ? (engagement / views) * 100 : 0);
+            const followerConversion = reach > 0 ? (followersGained / reach) * 100 : 0;
+
+            return { engagement, engagementRate, followerConversion };
+        }
+
+        function computeAllContentScores() {
+            const contents = db.content;
+            if (contents.length === 0) return;
+
+            const platforms = ['youtube', 'instagram', 'tiktok', 'facebook'];
+            platforms.forEach(plat => {
+                const pContent = contents.filter(c => c.platformId === plat);
+                if (pContent.length === 0) return;
+
+                let maxReach = Math.max(...pContent.map(c => safeNum(c.reach)), 1);
+                let maxViews = Math.max(...pContent.map(c => safeNum(c.views)), 1);
+                let maxER = Math.max(...pContent.map(c => computeContentMetrics(c).engagementRate), 0.01);
+                let maxFollowers = Math.max(...pContent.map(c => safeNum(c.followersGained)), 1);
+
+                pContent.forEach(c => {
+                    const metrics = computeContentMetrics(c);
+                    const nReach = Math.min(safeNum(c.reach) / maxReach, 1);
+                    const nViews = Math.min(safeNum(c.views) / maxViews, 1);
+                    const nER = Math.min(metrics.engagementRate / maxER, 1);
+                    const nFoll = Math.min(safeNum(c.followersGained) / maxFollowers, 1);
+
+                    const score = (nReach * 30) + (nER * 30) + (nViews * 20) + (nFoll * 20);
+                    c.computedScore = Math.round(Math.min(Math.max(score, 0), 100));
+
+                    if (c.computedScore >= 80) c.classification = 'Viral';
+                    else if (c.computedScore >= 60) c.classification = 'Scale';
+                    else if (c.computedScore >= 40) c.classification = 'Keep';
+                    else c.classification = 'Review';
+                });
+            });
+        }
+
+        function getLatestFollowers(platformId) {
+            const g = db.growth.filter(item => item.platformId === platformId);
+            if (g.length > 0) {
+                g.sort((a, b) => new Date(b.date) - new Date(a.date));
+                return safeNum(g[0].followers);
+            }
+            const pContent = db.content.filter(c => c.platformId === platformId);
+            return pContent.reduce((acc, curr) => acc + safeNum(curr.followersGained), 0);
+        }
+
+        function getPlatformGrowth(platformId, periodDays = null) {
+            if (periodDays === null) periodDays = getActivePeriodDays();
+            
+            const allPlatformGrowth = db.growth.filter(g => g.platformId === platformId);
+            const pGrowthFiltered = filterRecordsByPeriod(allPlatformGrowth, 'date', periodDays);
+            
+            if (pGrowthFiltered.length >= 2) {
+                pGrowthFiltered.sort((a, b) => new Date(a.date) - new Date(b.date));
+                return safeNum(pGrowthFiltered[pGrowthFiltered.length - 1].followers) - safeNum(pGrowthFiltered[0].followers);
+            } else if (pGrowthFiltered.length === 1 && periodDays !== 'all') {
+                const sortedAll = [...allPlatformGrowth].sort((a, b) => new Date(a.date) - new Date(b.date));
+                const targetRecord = pGrowthFiltered[0];
+                const targetIndex = sortedAll.findIndex(g => g.internalId === targetRecord.internalId);
+                if (targetIndex > 0) {
+                    return safeNum(targetRecord.followers) - safeNum(sortedAll[targetIndex - 1].followers);
+                }
+            } else if (allPlatformGrowth.length >= 2 && periodDays === 'all') {
+                const sortedAll = [...allPlatformGrowth].sort((a, b) => new Date(a.date) - new Date(b.date));
+                return safeNum(sortedAll[sortedAll.length - 1].followers) - safeNum(sortedAll[0].followers);
+            }
+            
+            const pContent = filterRecordsByPeriod(db.content.filter(c => c.platformId === platformId), 'publishedDate', periodDays);
+            return pContent.reduce((acc, c) => acc + safeNum(c.followersGained), 0);
+        }
+
+        function calculateDashboardMetrics(periodDays = null) {
+            if (periodDays === null) periodDays = getActivePeriodDays();
+            computeAllContentScores();
+
+            const activeContent = filterRecordsByPeriod(db.content, 'publishedDate', periodDays);
+            
+            let totalViews = 0;
+            let totalReach = 0;
+            let totalEngagement = 0;
+            let totalFollowersGained = 0;
+            let totalContentCount = activeContent.length;
+
+            activeContent.forEach(c => {
+                const m = computeContentMetrics(c);
+                totalViews += safeNum(c.views);
+                totalReach += safeNum(c.reach);
+                totalEngagement += m.engagement;
+                totalFollowersGained += safeNum(c.followersGained);
+            });
+
+            let totalFollowers = 0;
+            db.platforms.forEach(p => {
+                totalFollowers += getLatestFollowers(p.id);
+            });
+
+            let avgER = 0;
+            if (totalContentCount > 0) {
+                const sumER = activeContent.reduce((acc, c) => acc + computeContentMetrics(c).engagementRate, 0);
+                avgER = sumER / totalContentCount;
+            }
+
+            const exposureScore = calculateExposureScore(periodDays);
+
+            return {
+                totalFollowers,
+                totalViews,
+                totalReach,
+                totalEngagement,
+                avgER,
+                totalFollowersGained,
+                totalContentCount,
+                exposureScore
+            };
+        }
+
+        function calculateExposureScoreForRecords(activeContent) {
+            if (activeContent.length === 0) return 0;
+            let totalReach = activeContent.reduce((acc, c) => acc + safeNum(c.reach), 0);
+            let totalViews = activeContent.reduce((acc, c) => acc + safeNum(c.views), 0);
+            let totalEng = activeContent.reduce((acc, c) => acc + computeContentMetrics(c).engagement, 0);
+            let totalShares = activeContent.reduce((acc, c) => acc + safeNum(c.shares), 0);
+            let totalFollGained = activeContent.reduce((acc, c) => acc + safeNum(c.followersGained), 0);
+
+            const raw = (totalReach * 0.3) + (totalViews * 0.2) + (totalEng * 0.2) + (totalShares * 0.15) + (totalFollGained * 0.15);
+            const score = Math.min(Math.round(Math.log10(raw + 1) * 20), 100);
+            return isNaN(score) ? 0 : score;
+        }
+
+        function calculateExposureScore(periodDays = null) {
+            if (periodDays === null) periodDays = getActivePeriodDays();
+            const activeContent = filterRecordsByPeriod(db.content, 'publishedDate', periodDays);
+            return calculateExposureScoreForRecords(activeContent);
+        }
+
+        function getPreviousPeriodRecords(records, dateKey, periodDays) {
+            if (periodDays === 'all' || periodDays === 'today') return null;
+            const now = new Date();
+            const windowEnd = new Date();
+            windowEnd.setDate(now.getDate() - periodDays);
+            const windowStart = new Date();
+            windowStart.setDate(now.getDate() - (periodDays * 2));
+
+            return records.filter(r => {
+                const dStr = r[dateKey];
+                if (!dStr) return false;
+                const d = new Date(dStr);
+                return d >= windowStart && d < windowEnd;
+            });
+        }
+
+        function calculatePreviousPeriodMetrics(periodDays) {
+            const prevContent = getPreviousPeriodRecords(db.content, 'publishedDate', periodDays);
+            if (prevContent === null) return null;
+
+            let totalViews = 0, totalReach = 0, totalEngagement = 0, totalFollowersGained = 0;
+            prevContent.forEach(c => {
+                const m = computeContentMetrics(c);
+                totalViews += safeNum(c.views);
+                totalReach += safeNum(c.reach);
+                totalEngagement += m.engagement;
+                totalFollowersGained += safeNum(c.followersGained);
+            });
+
+            return {
+                totalViews, totalReach, totalEngagement, totalFollowersGained,
+                totalContentCount: prevContent.length,
+                exposureScore: calculateExposureScoreForRecords(prevContent)
+            };
+        }
+
+        function pctChange(current, previous) {
+            if (previous === 0) return current > 0 ? 100 : 0;
+            return ((current - previous) / previous) * 100;
+        }
+
+        function renderDeltaBadge(current, previous) {
+            if (previous === null || previous === undefined) return '';
+            const pct = pctChange(current, previous);
+            if (!isFinite(pct)) return '';
+            const up = pct >= 0;
+            return `<span class="text-[10px] font-bold ${up ? 'text-emerald-600' : 'text-red-500'} ml-1 whitespace-nowrap"><i class="fa-solid fa-arrow-${up ? 'up' : 'down'}"></i> ${Math.abs(pct).toFixed(0)}% vs periode lalu</span>`;
+        }
+
+        function calculatePlatformRankings(periodDays = null) {
+            if (periodDays === null) periodDays = getActivePeriodDays();
+            computeAllContentScores();
+
+            return db.platforms.map(plat => {
+                const pContent = filterRecordsByPeriod(db.content.filter(c => c.platformId === plat.id), 'publishedDate', periodDays);
+                const followers = getLatestFollowers(plat.id);
+                const views = pContent.reduce((acc, c) => acc + safeNum(c.views), 0);
+                const reach = pContent.reduce((acc, c) => acc + safeNum(c.reach), 0);
+                const engagement = pContent.reduce((acc, c) => acc + computeContentMetrics(c).engagement, 0);
+                
+                let er = 0;
+                if (pContent.length > 0) {
+                    er = pContent.reduce((acc, c) => acc + computeContentMetrics(c).engagementRate, 0) / pContent.length;
+                }
+
+                const growthNum = getPlatformGrowth(plat.id, periodDays);
+
+                let avgContentScore = pContent.length > 0 ? pContent.reduce((acc, c) => acc + (c.computedScore || 0), 0) / pContent.length : 0;
+                let numDays = (periodDays === 'all' || periodDays === 'today') ? 30 : periodDays;
+                let consistency = Math.min((pContent.length / numDays) * 100, 100);
+
+                const score = Math.round((Math.min(Math.max(growthNum, 0) / 1000, 1) * 25) + 
+                              (Math.min(reach / 10000, 1) * 20) + 
+                              (Math.min(er / 10, 1) * 25) + 
+                              ((avgContentScore / 100) * 15) + 
+                              ((consistency / 100) * 15));
+
+                let level = 'Low';
+                if (score >= 80) level = 'Excellent';
+                else if (score >= 60) level = 'Good';
+                else if (score >= 40) level = 'Watch';
+
+                return {
+                    ...plat,
+                    followers,
+                    growth: growthNum,
+                    views,
+                    reach,
+                    engagement,
+                    engagementRate: er,
+                    contentCount: pContent.length,
+                    score: Math.min(Math.max(score, 0), 100),
+                    level
+                };
+            }).sort((a, b) => b.score - a.score);
+        }
+
+        function generateInsights(periodDays = null) {
+            const rankings = calculatePlatformRankings(periodDays);
+            const insights = [];
+            
+            if (rankings.length > 0 && rankings[0].views > 0) {
+                insights.push(`${rankings[0].name} is your top performing channel with ${rankings[0].views.toLocaleString()} views and ${rankings[0].growth >= 0 ? '+' : ''}${rankings[0].growth.toLocaleString()} follower growth.`);
+            }
+
+            const activeContent = filterRecordsByPeriod(db.content, 'publishedDate', periodDays);
+            if (activeContent.length > 0) {
+                const viral = activeContent.filter(c => c.classification === 'Viral');
+                if (viral.length > 0) {
+                    insights.push(`You published ${viral.length} Viral-tier content piece(s) driving significant reach and engagement.`);
+                }
+            } else {
+                insights.push('No content published during this selected period.');
+            }
+
+            return insights;
+        }
+
+        function generateRecommendations(periodDays = null) {
+            const rankings = calculatePlatformRankings(periodDays);
+            const recommendations = [];
+
+            rankings.forEach(p => {
+                if (p.contentCount === 0) {
+                    recommendations.push({
+                        type: p.name,
+                        priority: 'High',
+                        text: `Increase activity on ${p.name}. No content was published during the selected period.`
+                    });
+                } else if (p.engagementRate < 2.0) {
+                    recommendations.push({
+                        type: p.name,
+                        priority: 'Medium',
+                        text: `${p.name} engagement rate is currently ${p.engagementRate.toFixed(2)}%. Focus on interactive call-to-actions.`
+                    });
+                }
+            });
+
+            return recommendations;
+        }
+
+        /* ==========================================
+           4. RENDER VIEWS: DASHBOARD
+           ========================================== */
+        function renderDashboard() {
+            const periodDays = getActivePeriodDays();
+            const metrics = calculateDashboardMetrics(periodDays);
+            const prevMetrics = calculatePreviousPeriodMetrics(periodDays);
+            const rankings = calculatePlatformRankings(periodDays);
+            const insights = generateInsights(periodDays);
+            const recommendations = generateRecommendations(periodDays);
+
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            const hasData = db.content.length > 0 || db.growth.length > 0;
+
+            if (!hasData) {
+                mainArea.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-[75vh] text-center px-4">
+                        <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mb-4 shadow-sm">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Workspace Masih Kosong</h3>
+                        <p class="text-sm text-slate-500 max-w-md mb-6">BAYU siap mengolah analitik media sosial Anda. Tambahkan data konten pertama Anda atau upload file analitik Anda untuk melihat live insights.</p>
+                        <div class="flex flex-wrap items-center justify-center gap-3">
+                            <button onclick="openAddContentModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm custom-transition flex items-center gap-2">
+                                <i class="fa-solid fa-plus"></i> Add Content
+                            </button>
+                            <button onclick="navigateTo('import-analytics')" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm custom-transition flex items-center gap-2">
+                                <i class="fa-solid fa-upload"></i> Upload Analytics
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            mainArea.innerHTML = `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between text-slate-500 mb-2">
+                                <span class="text-xs font-semibold uppercase tracking-wider">Total Followers</span>
+                                <i class="fa-solid fa-users text-blue-500 bg-blue-50 p-2 rounded-lg"></i>
+                            </div>
+                            <div class="text-2xl font-bold text-slate-800">${metrics.totalFollowers.toLocaleString()}</div>
+                            <div class="text-xs text-slate-400 mt-1">Across all connected platforms</div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between text-slate-500 mb-2">
+                                <span class="text-xs font-semibold uppercase tracking-wider">Total Views</span>
+                                <i class="fa-solid fa-eye text-emerald-500 bg-emerald-50 p-2 rounded-lg"></i>
+                            </div>
+                            <div class="text-2xl font-bold text-slate-800">${metrics.totalViews.toLocaleString()}</div>
+                            <div class="text-xs text-slate-400 mt-1">Selected Period Views ${prevMetrics ? renderDeltaBadge(metrics.totalViews, prevMetrics.totalViews) : ''}</div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between text-slate-500 mb-2">
+                                <span class="text-xs font-semibold uppercase tracking-wider">Total Reach</span>
+                                <i class="fa-solid fa-bullhorn text-purple-500 bg-purple-50 p-2 rounded-lg"></i>
+                            </div>
+                            <div class="text-2xl font-bold text-slate-800">${metrics.totalReach.toLocaleString()}</div>
+                            <div class="text-xs text-slate-400 mt-1">Unique accounts reached ${prevMetrics ? renderDeltaBadge(metrics.totalReach, prevMetrics.totalReach) : ''}</div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between text-slate-500 mb-2">
+                                <span class="text-xs font-semibold uppercase tracking-wider">Exposure Score</span>
+                                <i class="fa-solid fa-bolt text-amber-500 bg-amber-50 p-2 rounded-lg"></i>
+                            </div>
+                            <div class="text-2xl font-bold text-slate-800">${metrics.exposureScore} <span class="text-xs font-normal text-slate-400">/ 100</span></div>
+                            <div class="text-xs text-emerald-600 font-medium mt-1">${metrics.exposureScore >= 60 ? 'High Exposure' : 'Moderate Exposure'} ${prevMetrics ? renderDeltaBadge(metrics.exposureScore, prevMetrics.exposureScore) : ''}</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                    <i class="fa-solid fa-radar text-blue-600"></i> What Happened? (Insights)
+                                </h3>
+                                <span class="text-xs text-slate-400">Live Data Engine</span>
+                            </div>
+                            <div class="space-y-3 flex-1">
+                                ${insights.length > 0 ? insights.map(i => `
+                                    <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs text-slate-700">
+                                        <i class="fa-solid fa-circle-check text-blue-600 mt-0.5"></i>
+                                        <span>${i}</span>
+                                    </div>
+                                `).join('') : '<div class="text-xs text-slate-400 italic">Not enough data to generate insights.</div>'}
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                    <i class="fa-solid fa-compass text-emerald-600"></i> What Should I Do Next? (Actions)
+                                </h3>
+                                <span class="text-xs text-slate-400">Recommendation Engine</span>
+                            </div>
+                            <div class="space-y-3 flex-1">
+                                ${recommendations.length > 0 ? recommendations.map(r => `
+                                    <div class="flex items-start gap-3 p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-xs text-slate-700">
+                                        <span class="px-1.5 py-0.5 bg-${r.priority === 'High' ? 'red' : 'blue'}-100 text-${r.priority === 'High' ? 'red' : 'blue'}-700 font-bold rounded text-[10px]">${r.priority}</span>
+                                        <span class="flex-1">${r.text}</span>
+                                    </div>
+                                `).join('') : '<div class="text-xs text-slate-400 italic">All systems performing optimally. No urgent actions required.</div>'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Platform Performance Ranking</h3>
+                            <button onclick="navigateTo('overview')" class="text-xs text-blue-600 font-semibold hover:underline">View Detailed Overview</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                                        <th class="p-4 font-semibold">Platform</th>
+                                        <th class="p-4 font-semibold">Followers</th>
+                                        <th class="p-4 font-semibold">Growth</th>
+                                        <th class="p-4 font-semibold">Views</th>
+                                        <th class="p-4 font-semibold">Reach</th>
+                                        <th class="p-4 font-semibold">Engagement</th>
+                                        <th class="p-4 font-semibold">ER %</th>
+                                        <th class="p-4 font-semibold">Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    ${rankings.map(p => `
+                                        <tr class="hover:bg-slate-50/80 cursor-pointer" onclick="navigateTo('platform-${p.id}')">
+                                            <td class="p-4 font-bold text-slate-800 flex items-center gap-2">
+                                                <i class="fa-brands ${p.icon} text-base" style="color: ${p.color}"></i> ${p.name}
+                                            </td>
+                                            <td class="p-4 text-slate-600">${p.followers.toLocaleString()}</td>
+                                            <td class="p-4 font-semibold ${p.growth >= 0 ? 'text-emerald-600' : 'text-red-600'}">${p.growth >= 0 ? '+' : ''}${p.growth.toLocaleString()}</td>
+                                            <td class="p-4 text-slate-600">${p.views.toLocaleString()}</td>
+                                            <td class="p-4 text-slate-600">${p.reach.toLocaleString()}</td>
+                                            <td class="p-4 text-slate-600">${p.engagement.toLocaleString()}</td>
+                                            <td class="p-4 text-slate-600">${p.engagementRate.toFixed(2)}%</td>
+                                            <td class="p-4">
+                                                <span class="px-2 py-1 bg-blue-50 text-blue-700 font-bold rounded">${p.score}/100</span>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center justify-between">
+                                <span>Top 5 Content by Views</span>
+                                <i class="fa-solid fa-eye text-slate-400"></i>
+                            </h3>
+                            <div class="space-y-3">
+                                ${getTopContent('views', 5).map((c, i) => `
+                                    <div onclick="openContentDetailModal('${c.internalId}')" class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-blue-50/50 cursor-pointer custom-transition">
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <span class="text-xs font-bold text-slate-400">#${i+1}</span>
+                                            <div class="min-w-0">
+                                                <div class="text-xs font-semibold text-slate-800 truncate">${escapeHTML(c.contentTitle)}</div>
+                                                <div class="text-[10px] text-slate-500 uppercase">${c.platformId} • ${c.contentType}</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-xs font-bold text-slate-700 whitespace-nowrap ml-3">${safeNum(c.views).toLocaleString()} views</div>
+                                    </div>
+                                `).join('') || '<div class="text-xs text-slate-400 italic">No content available.</div>'}
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center justify-between">
+                                <span>Top 5 Content by Score</span>
+                                <i class="fa-solid fa-star text-amber-400"></i>
+                            </h3>
+                            <div class="space-y-3">
+                                ${getTopContent('computedScore', 5).map((c, i) => `
+                                    <div onclick="openContentDetailModal('${c.internalId}')" class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-blue-50/50 cursor-pointer custom-transition">
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <span class="text-xs font-bold text-slate-400">#${i+1}</span>
+                                            <div class="min-w-0">
+                                                <div class="text-xs font-semibold text-slate-800 truncate">${escapeHTML(c.contentTitle)}</div>
+                                                <div class="text-[10px] text-slate-500 uppercase">${c.platformId} • <span class="text-blue-600 font-bold">${c.classification}</span></div>
+                                            </div>
+                                        </div>
+                                        <div class="text-xs font-bold text-blue-600 whitespace-nowrap ml-3">${c.computedScore || 0} pts</div>
+                                    </div>
+                                `).join('') || '<div class="text-xs text-slate-400 italic">No content available.</div>'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getTopContent(metricKey, limit = 5) {
+            const periodDays = getActivePeriodDays();
+            const activeContent = filterRecordsByPeriod(db.content, 'publishedDate', periodDays);
+            return [...activeContent].sort((a, b) => {
+                if (metricKey === 'engagement') {
+                    return computeContentMetrics(b).engagement - computeContentMetrics(a).engagement;
+                }
+                return safeNum(b[metricKey]) - safeNum(a[metricKey]);
+            }).slice(0, limit);
+        }
+
+        /* ==========================================
+           5. RENDER VIEWS: OVERVIEW & INSIGHTS
+           ========================================== */
+        function renderOverview() {
+            const periodDays = getActivePeriodDays();
+            const metrics = calculateDashboardMetrics(periodDays);
+            const prevMetrics = calculatePreviousPeriodMetrics(periodDays);
+            const rankings = calculatePlatformRankings(periodDays);
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            mainArea.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="text-base font-bold text-slate-800 mb-1">Executive Summary</h3>
+                        <p class="text-xs text-slate-500 mb-6">Comprehensive portfolio performance for the selected time period (${periodDays === 'all' ? 'All Time' : periodDays + ' Days'}).</p>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                <div class="text-[11px] font-semibold text-slate-400 uppercase">Total Content</div>
+                                <div class="text-xl font-bold text-slate-800 mt-1">${metrics.totalContentCount}</div>
+                                <div class="mt-1">${prevMetrics ? renderDeltaBadge(metrics.totalContentCount, prevMetrics.totalContentCount) : ''}</div>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                <div class="text-[11px] font-semibold text-slate-400 uppercase">Total Engagement</div>
+                                <div class="text-xl font-bold text-slate-800 mt-1">${metrics.totalEngagement.toLocaleString()}</div>
+                                <div class="mt-1">${prevMetrics ? renderDeltaBadge(metrics.totalEngagement, prevMetrics.totalEngagement) : ''}</div>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                <div class="text-[11px] font-semibold text-slate-400 uppercase">Average ER</div>
+                                <div class="text-xl font-bold text-slate-800 mt-1">${metrics.avgER.toFixed(2)}%</div>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                <div class="text-[11px] font-semibold text-slate-400 uppercase">New Followers</div>
+                                <div class="text-xl font-bold text-emerald-600 mt-1">+${metrics.totalFollowersGained.toLocaleString()}</div>
+                                <div class="mt-1">${prevMetrics ? renderDeltaBadge(metrics.totalFollowersGained, prevMetrics.totalFollowersGained) : ''}</div>
+                            </div>
+                        </div>
+
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Formula Transparency & Score Weights</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-600">
+                            <div class="p-3 bg-blue-50/50 rounded-lg border border-blue-100">
+                                <div class="font-bold text-blue-700 mb-1">Platform Score</div>
+                                <p class="text-[11px]">Growth (25%) + Reach (20%) + ER (25%) + Content Performance (15%) + Consistency (15%)</p>
+                            </div>
+                            <div class="p-4 bg-emerald-50/50 rounded-lg border border-emerald-100">
+                                <div class="font-bold text-emerald-700 mb-1">Exposure Score</div>
+                                <p class="text-[11px]">Reach (30%) + Views (20%) + Engagement (20%) + Shares (15%) + Follower Growth (15%)</p>
+                            </div>
+                            <div class="p-4 bg-purple-50/50 rounded-lg border border-purple-100">
+                                <div class="font-bold text-purple-700 mb-1">Content Score</div>
+                                <p class="text-[11px]">Reach (30%) + Engagement Rate (30%) + Views (20%) + Followers Gained (20%)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* ==========================================
+           6. RENDER VIEWS: PLATFORM DETAIL
+           ========================================== */
+        function renderPlatformDetail(platformId) {
+            const platform = db.platforms.find(p => p.id === platformId);
+            const periodDays = getActivePeriodDays();
+            const pContent = filterRecordsByPeriod(db.content.filter(c => c.platformId === platformId), 'publishedDate', periodDays);
+            const rankings = calculatePlatformRankings(periodDays);
+            const pRank = rankings.find(r => r.id === platformId) || {};
+
+            const prevPContent = getPreviousPeriodRecords(db.content.filter(c => c.platformId === platformId), 'publishedDate', periodDays);
+            const prevPViews = prevPContent ? prevPContent.reduce((acc, c) => acc + safeNum(c.views), 0) : null;
+            const prevPReach = prevPContent ? prevPContent.reduce((acc, c) => acc + safeNum(c.reach), 0) : null;
+
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            mainArea.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white text-2xl shadow-sm" style="background-color: ${platform.color}">
+                                <i class="fa-brands ${platform.icon}"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800">${platform.name} Performance Intelligence</h3>
+                                <p class="text-xs text-slate-500">Platform Score: <span class="font-bold text-blue-600">${pRank.score || 0}/100</span> (${pRank.level || 'Low'})</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="openAddContentModalForPlatform('${platformId}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm">
+                                <i class="fa-solid fa-plus mr-1"></i> Add ${platform.name} Content
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="text-xs font-semibold text-slate-400 uppercase mb-1">Followers / Subs</div>
+                            <div class="text-2xl font-bold text-slate-800">${(pRank.followers || 0).toLocaleString()}</div>
+                            <div class="text-xs text-emerald-600 font-medium mt-1">Growth: +${(pRank.growth || 0).toLocaleString()}</div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="text-xs font-semibold text-slate-400 uppercase mb-1">Views</div>
+                            <div class="text-2xl font-bold text-slate-800">${(pRank.views || 0).toLocaleString()}</div>
+                            <div class="text-xs text-slate-400 mt-1">${pContent.length} contents published ${prevPViews !== null ? renderDeltaBadge(pRank.views || 0, prevPViews) : ''}</div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="text-xs font-semibold text-slate-400 uppercase mb-1">Reach</div>
+                            <div class="text-2xl font-bold text-slate-800">${(pRank.reach || 0).toLocaleString()}</div>
+                            <div class="text-xs text-slate-400 mt-1">Unique viewers ${prevPReach !== null ? renderDeltaBadge(pRank.reach || 0, prevPReach) : ''}</div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="text-xs font-semibold text-slate-400 uppercase mb-1">Engagement Rate</div>
+                            <div class="text-2xl font-bold text-slate-800">${(pRank.engagementRate || 0).toFixed(2)}%</div>
+                            <div class="text-xs text-slate-400 mt-1">Total Eng: ${(pRank.engagement || 0).toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">${platform.name} Content Intelligence</h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                                        <th class="p-4 font-semibold">Title</th>
+                                        <th class="p-4 font-semibold">Type</th>
+                                        <th class="p-4 font-semibold">Date</th>
+                                        <th class="p-4 font-semibold">Views</th>
+                                        <th class="p-4 font-semibold">Reach</th>
+                                        <th class="p-4 font-semibold">ER %</th>
+                                        <th class="p-4 font-semibold">Score</th>
+                                        <th class="p-4 font-semibold">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    ${pContent.map(c => {
+                                        const m = computeContentMetrics(c);
+                                        return `
+                                            <tr class="hover:bg-slate-50">
+                                                <td class="p-4 font-bold text-slate-800 max-w-xs truncate cursor-pointer hover:text-blue-600" onclick="openContentDetailModal('${c.internalId}')">${escapeHTML(c.contentTitle)}</td>
+                                                <td class="p-4 text-slate-600">${escapeHTML(c.contentType)}</td>
+                                                <td class="p-4 text-slate-500">${c.publishedDate}</td>
+                                                <td class="p-4 text-slate-600">${safeNum(c.views).toLocaleString()}</td>
+                                                <td class="p-4 text-slate-600">${safeNum(c.reach).toLocaleString()}</td>
+                                                <td class="p-4 text-slate-600">${m.engagementRate.toFixed(2)}%</td>
+                                                <td class="p-4 font-bold text-blue-600">${c.computedScore || 0}</td>
+                                                <td class="p-4 flex items-center gap-2">
+                                                    <button onclick="openEditContentModal('${c.internalId}')" class="text-slate-500 hover:text-blue-600 p-1"><i class="fa-solid fa-pen"></i></button>
+                                                    <button onclick="confirmDeleteContent('${c.internalId}')" class="text-slate-500 hover:text-red-600 p-1"><i class="fa-solid fa-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                    ${pContent.length === 0 ? `<tr><td colspan="8" class="p-6 text-center text-slate-400 italic">No content found for ${platform.name} in this period.</td></tr>` : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openAddContentModalForPlatform(platformId) {
+            openAddContentModal();
+            document.getElementById('form-platform').value = platformId;
+        }
+
+        /* ==========================================
+           7. RENDER VIEWS: CONTENT INTELLIGENCE
+           ========================================== */
+        let contentSearchQuery = '';
+        let contentPlatformFilter = '';
+        let contentSortBy = 'score';
+        let contentClassFilter = '';
+        let contentTypeFilter = '';
+        let contentDateFrom = '';
+        let contentDateTo = '';
+
+        function renderContentIntelligence() {
+            computeAllContentScores();
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            const allContentTypes = [...new Set(db.content.map(c => c.contentType).filter(Boolean))];
+
+            let filtered = db.content.filter(c => {
+                if (contentPlatformFilter && c.platformId !== contentPlatformFilter) return false;
+                if (contentClassFilter && (c.classification || 'Review') !== contentClassFilter) return false;
+                if (contentTypeFilter && c.contentType !== contentTypeFilter) return false;
+                if (contentDateFrom && (c.publishedDate || '') < contentDateFrom) return false;
+                if (contentDateTo && (c.publishedDate || '') > contentDateTo) return false;
+                if (contentSearchQuery) {
+                    const q = contentSearchQuery.toLowerCase();
+                    const matchTitle = (c.contentTitle || '').toLowerCase().includes(q);
+                    const matchTopic = (c.topic || '').toLowerCase().includes(q);
+                    const matchType = (c.contentType || '').toLowerCase().includes(q);
+                    return matchTitle || matchTopic || matchType;
+                }
+                return true;
+            });
+
+            filtered.sort((a, b) => {
+                if (contentSortBy === 'score') return (b.computedScore || 0) - (a.computedScore || 0);
+                if (contentSortBy === 'views') return safeNum(b.views) - safeNum(a.views);
+                if (contentSortBy === 'reach') return safeNum(b.reach) - safeNum(a.reach);
+                if (contentSortBy === 'engagement') return computeContentMetrics(b).engagement - computeContentMetrics(a).engagement;
+                if (contentSortBy === 'newest') return new Date(b.publishedDate) - new Date(a.publishedDate);
+                if (contentSortBy === 'oldest') return new Date(a.publishedDate) - new Date(b.publishedDate);
+                return 0;
+            });
+
+            mainArea.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center gap-3 w-full md:w-auto flex-1">
+                            <div class="relative w-full md:w-80">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+                                <input type="text" id="content-search-input" value="${contentSearchQuery}" oninput="handleContentSearch(this.value)" placeholder="Search title, topic, type..." class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <select id="content-platform-filter" onchange="handleContentPlatformFilter(this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 outline-none">
+                                <option value="">All Platforms</option>
+                                <option value="youtube" ${contentPlatformFilter === 'youtube' ? 'selected' : ''}>YouTube</option>
+                                <option value="instagram" ${contentPlatformFilter === 'instagram' ? 'selected' : ''}>Instagram</option>
+                                <option value="tiktok" ${contentPlatformFilter === 'tiktok' ? 'selected' : ''}>TikTok</option>
+                                <option value="facebook" ${contentPlatformFilter === 'facebook' ? 'selected' : ''}>Facebook</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                            <select id="content-sort-select" onchange="handleContentSort(this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 outline-none">
+                                <option value="score" ${contentSortBy === 'score' ? 'selected' : ''}>Sort: Highest Score</option>
+                                <option value="views" ${contentSortBy === 'views' ? 'selected' : ''}>Sort: Highest Views</option>
+                                <option value="reach" ${contentSortBy === 'reach' ? 'selected' : ''}>Sort: Highest Reach</option>
+                                <option value="engagement" ${contentSortBy === 'engagement' ? 'selected' : ''}>Sort: Highest Engagement</option>
+                                <option value="newest" ${contentSortBy === 'newest' ? 'selected' : ''}>Sort: Newest</option>
+                                <option value="oldest" ${contentSortBy === 'oldest' ? 'selected' : ''}>Sort: Oldest</option>
+                            </select>
+                            <button onclick="openAddContentModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm whitespace-nowrap">
+                                <i class="fa-solid fa-plus mr-1"></i> Add Content
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-3">
+                        <span class="text-[11px] font-bold text-slate-400 uppercase">Advanced Filters:</span>
+                        <select id="content-class-filter" onchange="handleContentClassFilter(this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-700 outline-none">
+                            <option value="">All Classifications</option>
+                            <option value="Viral" ${contentClassFilter === 'Viral' ? 'selected' : ''}>Viral</option>
+                            <option value="Scale" ${contentClassFilter === 'Scale' ? 'selected' : ''}>Scale</option>
+                            <option value="Keep" ${contentClassFilter === 'Keep' ? 'selected' : ''}>Keep</option>
+                            <option value="Review" ${contentClassFilter === 'Review' ? 'selected' : ''}>Review</option>
+                        </select>
+                        <select id="content-type-filter" onchange="handleContentTypeFilter(this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-700 outline-none">
+                            <option value="">All Content Types</option>
+                            ${allContentTypes.map(t => `<option value="${escapeHTML(t)}" ${contentTypeFilter === t ? 'selected' : ''}>${escapeHTML(t)}</option>`).join('')}
+                        </select>
+                        <div class="flex items-center gap-1.5 text-xs text-slate-500">
+                            <span>From</span>
+                            <input type="date" value="${contentDateFrom}" onchange="handleContentDateFrom(this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700 outline-none">
+                            <span>To</span>
+                            <input type="date" value="${contentDateTo}" onchange="handleContentDateTo(this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700 outline-none">
+                        </div>
+                        ${(contentClassFilter || contentTypeFilter || contentDateFrom || contentDateTo) ? `<button onclick="clearAdvancedFilters()" class="text-[11px] font-semibold text-red-600 hover:text-red-700">Clear Filters</button>` : ''}
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                                        <th class="p-4 font-semibold">Title</th>
+                                        <th class="p-4 font-semibold">Platform</th>
+                                        <th class="p-4 font-semibold">Type</th>
+                                        <th class="p-4 font-semibold">Topic</th>
+                                        <th class="p-4 font-semibold">Date</th>
+                                        <th class="p-4 font-semibold">Views</th>
+                                        <th class="p-4 font-semibold">Reach</th>
+                                        <th class="p-4 font-semibold">Score</th>
+                                        <th class="p-4 font-semibold">Class</th>
+                                        <th class="p-4 font-semibold">Source</th>
+                                        <th class="p-4 font-semibold">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    ${filtered.map(c => `
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="p-4 font-bold text-slate-800 max-w-xs truncate cursor-pointer hover:text-blue-600" onclick="openContentDetailModal('${c.internalId}')">${escapeHTML(c.contentTitle)}</td>
+                                            <td class="p-4 uppercase font-semibold text-slate-600">${escapeHTML(c.platformId)}</td>
+                                            <td class="p-4 text-slate-600">${escapeHTML(c.contentType)}</td>
+                                            <td class="p-4 text-slate-500">${escapeHTML(c.topic) || 'General'}</td>
+                                            <td class="p-4 text-slate-500">${c.publishedDate}</td>
+                                            <td class="p-4 text-slate-600">${safeNum(c.views).toLocaleString()}</td>
+                                            <td class="p-4 text-slate-600">${safeNum(c.reach).toLocaleString()}</td>
+                                            <td class="p-4 font-bold text-blue-600">${c.computedScore || 0}</td>
+                                            <td class="p-4">
+                                                <span class="px-2 py-0.5 rounded font-bold text-[10px] ${c.classification === 'Viral' ? 'bg-purple-100 text-purple-700' : c.classification === 'Scale' ? 'bg-emerald-100 text-emerald-700' : c.classification === 'Keep' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}">${c.classification || 'Review'}</span>
+                                            </td>
+                                            <td class="p-4">
+                                                <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold ${c.source === 'import' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}">${c.source || 'manual'}</span>
+                                            </td>
+                                            <td class="p-4 flex items-center gap-2">
+                                                <button onclick="openContentDetailModal('${c.internalId}')" class="text-slate-400 hover:text-blue-600 p-1" title="View Detail"><i class="fa-solid fa-eye"></i></button>
+                                                <button onclick="openEditContentModal('${c.internalId}')" class="text-slate-400 hover:text-blue-600 p-1" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                                                <button onclick="confirmDeleteContent('${c.internalId}')" class="text-slate-400 hover:text-red-600 p-1" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                    ${filtered.length === 0 ? `<tr><td colspan="11" class="p-8 text-center text-slate-400 italic">No content found matching your filters.</td></tr>` : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleContentSearch(val) { contentSearchQuery = val; renderContentIntelligence(); }
+        function handleContentPlatformFilter(val) { contentPlatformFilter = val; renderContentIntelligence(); }
+        function handleContentSort(val) { contentSortBy = val; renderContentIntelligence(); }
+        function handleContentClassFilter(val) { contentClassFilter = val; renderContentIntelligence(); }
+        function handleContentTypeFilter(val) { contentTypeFilter = val; renderContentIntelligence(); }
+        function handleContentDateFrom(val) { contentDateFrom = val; renderContentIntelligence(); }
+        function handleContentDateTo(val) { contentDateTo = val; renderContentIntelligence(); }
+
+        function clearAdvancedFilters() {
+            contentClassFilter = '';
+            contentTypeFilter = '';
+            contentDateFrom = '';
+            contentDateTo = '';
+            renderContentIntelligence();
+        }
+
+        /* ==========================================
+           8. RENDER VIEWS: AUDIENCE & GROWTH
+           ========================================== */
+        function renderAudience() {
+            const metrics = calculateDashboardMetrics('all');
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            const platformContrib = db.platforms.map(p => {
+                const foll = getLatestFollowers(p.id);
+                const pct = metrics.totalFollowers > 0 ? (foll / metrics.totalFollowers) * 100 : 0;
+                return { ...p, followers: foll, percentage: pct };
+            });
+
+            mainArea.innerHTML = `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Total Audience Distribution</h3>
+                            <div class="text-3xl font-bold text-slate-800 mb-2">${metrics.totalFollowers.toLocaleString()}</div>
+                            <p class="text-xs text-slate-500 mb-6">Combined audience across all integrated channels.</p>
+                            
+                            <div class="space-y-4">
+                                ${platformContrib.map(p => `
+                                    <div>
+                                        <div class="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1">
+                                            <span class="flex items-center gap-2"><i class="fa-brands ${p.icon}" style="color:${p.color}"></i> ${p.name}</span>
+                                            <span>${p.followers.toLocaleString()} (${p.percentage.toFixed(1)}%)</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                            <div class="h-full rounded-full" style="width: ${p.percentage}%; background-color: ${p.color}"></div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Audience Growth Insights</h3>
+                                <p class="text-xs text-slate-500 mb-4">Audience growth is dynamically calculated from your follower snapshots and content conversions.</p>
+                            </div>
+                            <div class="p-4 bg-blue-50/50 rounded-lg border border-blue-100 text-xs text-blue-800 space-y-2">
+                                <div class="font-bold">Growth Tip</div>
+                                <p>Keep track of daily follower snapshots in the Growth section to monitor historical follower velocity accurately.</p>
+                            </div>
+                            <div>
+                                <button onclick="navigateTo('growth')" class="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold py-2.5 rounded-lg custom-transition">Manage Growth Snapshots</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderGrowth() {
+            const periodDays = getActivePeriodDays();
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            const filteredGrowth = filterRecordsByPeriod(db.growth, 'date', periodDays);
+            filteredGrowth.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            mainArea.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800">Followers & Growth Snapshots</h3>
+                            <p class="text-xs text-slate-500">Record and review historical follower numbers per platform for selected period (${periodDays === 'all' ? 'All Time' : periodDays + ' Days'}).</p>
+                        </div>
+                        <button onclick="openAddGrowthModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm">
+                            <i class="fa-solid fa-plus mr-1"></i> Add Growth Record
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4">Follower Trend</h4>
+                        ${db.growth.length === 0
+                            ? `<div class="text-center py-10 text-slate-400 text-xs italic">Belum ada data untuk ditampilkan sebagai grafik.</div>`
+                            : `<div class="relative" style="height: 280px;"><canvas id="growth-trend-chart"></canvas></div>`
+                        }
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                                        <th class="p-4 font-semibold">Platform</th>
+                                        <th class="p-4 font-semibold">Date</th>
+                                        <th class="p-4 font-semibold">Followers / Subscribers</th>
+                                        <th class="p-4 font-semibold">Source</th>
+                                        <th class="p-4 font-semibold">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    ${filteredGrowth.map(g => `
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="p-4 uppercase font-bold text-slate-800">${escapeHTML(g.platformId)}</td>
+                                            <td class="p-4 text-slate-600">${escapeHTML(g.date)}</td>
+                                            <td class="p-4 font-semibold text-slate-800">${safeNum(g.followers).toLocaleString()}</td>
+                                            <td class="p-4"><span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px]">${escapeHTML(g.source || 'manual')}</span></td>
+                                            <td class="p-4 flex items-center gap-2">
+                                                <button onclick="openEditGrowthModal('${g.internalId}')" class="text-slate-400 hover:text-blue-600 p-1"><i class="fa-solid fa-pen"></i></button>
+                                                <button onclick="confirmDeleteGrowth('${g.internalId}')" class="text-slate-400 hover:text-red-600 p-1"><i class="fa-solid fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                    ${filteredGrowth.length === 0 ? `<tr><td colspan="5" class="p-8 text-center text-slate-400 italic">No growth records available for this period. Click 'Add Growth Record' to start tracking.</td></tr>` : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (db.growth.length > 0) {
+                renderGrowthTrendChart(periodDays);
+            }
+        }
+
+        let growthTrendChartInstance = null;
+
+        function renderGrowthTrendChart(periodDays) {
+            const canvas = document.getElementById('growth-trend-chart');
+            if (!canvas || typeof Chart === 'undefined') return;
+
+            const relevantGrowth = filterRecordsByPeriod(db.growth, 'date', periodDays);
+            const dataToUse = relevantGrowth.length > 0 ? relevantGrowth : db.growth;
+
+            const allDates = [...new Set(dataToUse.map(g => g.date))].sort((a, b) => new Date(a) - new Date(b));
+
+            const datasets = db.platforms.map(plat => {
+                const pRecords = dataToUse.filter(g => g.platformId === plat.id)
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+                if (pRecords.length === 0) return null;
+
+                const dataPoints = allDates.map(date => {
+                    const exact = pRecords.find(r => r.date === date);
+                    if (exact) return safeNum(exact.followers);
+                    const priorRecords = pRecords.filter(r => new Date(r.date) <= new Date(date));
+                    if (priorRecords.length > 0) return safeNum(priorRecords[priorRecords.length - 1].followers);
+                    return null;
+                });
+
+                return {
+                    label: plat.name,
+                    data: dataPoints,
+                    borderColor: plat.color,
+                    backgroundColor: plat.color + '20',
+                    tension: 0.3,
+                    spanGaps: true,
+                    pointRadius: 3
+                };
+            }).filter(Boolean);
+
+            if (growthTrendChartInstance) {
+                growthTrendChartInstance.destroy();
+            }
+
+            growthTrendChartInstance = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: { labels: allDates, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } },
+                    scales: {
+                        y: { beginAtZero: false, ticks: { font: { size: 10 } } },
+                        x: { ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 0 } }
+                    }
+                }
+            });
+        }
+
+        /* ==========================================
+           9. RENDER VIEWS: EXPOSURE & RECOMMENDATIONS
+           ========================================== */
+        function renderExposureIntelligence() {
+            const periodDays = getActivePeriodDays();
+            const rankings = calculatePlatformRankings(periodDays);
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            const exposureScore = calculateExposureScore(periodDays);
+
+            mainArea.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800">Exposure Intelligence</h3>
+                            <p class="text-xs text-slate-500">Analyze brand visibility, reach, and total impression dominance.</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-blue-600">${exposureScore} <span class="text-xs font-normal text-slate-400">/ 100</span></div>
+                            <div class="text-[11px] font-semibold uppercase text-slate-400">Exposure Score</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-6 border-b border-slate-100">
+                            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Exposure by Platform</h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                                        <th class="p-4 font-semibold">Platform</th>
+                                        <th class="p-4 font-semibold">Reach</th>
+                                        <th class="p-4 font-semibold">Views</th>
+                                        <th class="p-4 font-semibold">Engagement</th>
+                                        <th class="p-4 font-semibold">Platform Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    ${rankings.map(p => `
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="p-4 font-bold text-slate-800 flex items-center gap-2">
+                                                <i class="fa-brands ${p.icon}" style="color:${p.color}"></i> ${p.name}
+                                            </td>
+                                            <td class="p-4 text-slate-600">${p.reach.toLocaleString()}</td>
+                                            <td class="p-4 text-slate-600">${p.views.toLocaleString()}</td>
+                                            <td class="p-4 text-slate-600">${p.engagement.toLocaleString()}</td>
+                                            <td class="p-4 font-bold text-blue-600">${p.score}/100</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderRecommendations() {
+            const periodDays = getActivePeriodDays();
+            const recommendations = generateRecommendations(periodDays);
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            mainArea.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="text-base font-bold text-slate-800 mb-1">Actionable Recommendations</h3>
+                        <p class="text-xs text-slate-500">Automated strategies generated from your real-time analytics engine.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4">
+                        ${recommendations.map(r => `
+                            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg ${r.priority === 'High' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'} flex-shrink-0">
+                                    <i class="fa-solid fa-lightbulb"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-xs font-bold text-slate-800 uppercase">${r.type} Recommendation</span>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.priority === 'High' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}">${r.priority} Priority</span>
+                                    </div>
+                                    <p class="text-xs text-slate-600">${r.text}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                        ${recommendations.length === 0 ? `<div class="bg-white p-8 rounded-xl border border-slate-200 text-center text-slate-400 text-xs italic">No recommendations available yet. Add more data to power the recommendation engine.</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        /* ==========================================
+           10. RENDER VIEWS: REPORTS & EXPORT
+           ========================================== */
+        function renderReports() {
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            mainArea.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="text-base font-bold text-slate-800 mb-1">Summary Report</h3>
+                        <p class="text-xs text-slate-500 mb-4">Buat laporan ringkas siap-cetak berdasarkan periode yang sedang dipilih.</p>
+                        <button onclick="generateSummaryReport()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm">
+                            <i class="fa-solid fa-file-pdf mr-1"></i> Generate Report (Print / Save as PDF)
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="text-base font-bold text-slate-800 mb-1">Reports & CSV Export Center</h3>
+                        <p class="text-xs text-slate-500 mb-6">Download actual database records instantly into CSV format.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="p-5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-800 uppercase mb-1">Content Intelligence CSV</h4>
+                                    <p class="text-[11px] text-slate-500">Export all content performance records.</p>
+                                </div>
+                                <button onclick="exportCSV('content')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm">
+                                    <i class="fa-solid fa-download mr-1"></i> Export
+                                </button>
+                            </div>
+                            <div class="p-5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-800 uppercase mb-1">Platform Summary CSV</h4>
+                                    <p class="text-[11px] text-slate-500">Export aggregated platform metrics.</p>
+                                </div>
+                                <button onclick="exportCSV('platforms')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm">
+                                    <i class="fa-solid fa-download mr-1"></i> Export
+                                </button>
+                            </div>
+                            <div class="p-5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-800 uppercase mb-1">Growth History CSV</h4>
+                                    <p class="text-[11px] text-slate-500">Export all follower growth snapshots.</p>
+                                </div>
+                                <button onclick="exportCSV('growth')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm">
+                                    <i class="fa-solid fa-download mr-1"></i> Export
+                                </button>
+                            </div>
+                            <div class="p-5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-800 uppercase mb-1">Import History CSV</h4>
+                                    <p class="text-[11px] text-slate-500">Export upload batch history logs.</p>
+                                </div>
+                                <button onclick="exportCSV('imports')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm">
+                                    <i class="fa-solid fa-download mr-1"></i> Export
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function exportCSV(type) {
+            let filename = 'bayu_export.csv';
+            let csvContent = 'data:text/csv;charset=utf-8,';
+
+            if (type === 'content') {
+                filename = 'bayu_content_intelligence.csv';
+                csvContent += 'InternalID,Platform,Title,Type,Topic,Date,Views,Reach,Likes,Comments,Shares,Saves,Score,Classification,Source\r\n';
+                db.content.forEach(c => {
+                    const row = [c.internalId, c.platformId, `"${(c.contentTitle || '').replace(/"/g, '""')}"`, c.contentType, `"${(c.topic || '').replace(/"/g, '""')}"`, c.publishedDate, c.views, c.reach, c.likes, c.comments, c.shares, c.saves, c.computedScore, c.classification, c.source];
+                    csvContent += row.join(',') + '\r\n';
+                });
+            } else if (type === 'platforms') {
+                filename = 'bayu_platform_summary.csv';
+                csvContent += 'Platform,Followers,Views,Reach,Engagement,Score,Level\r\n';
+                const rankings = calculatePlatformRankings('all');
+                rankings.forEach(p => {
+                    csvContent += [p.name, p.followers, p.views, p.reach, p.engagement, p.score, p.level].join(',') + '\r\n';
+                });
+            } else if (type === 'growth') {
+                filename = 'bayu_growth_history.csv';
+                csvContent += 'InternalID,Platform,Date,Followers,Source\r\n';
+                db.growth.forEach(g => {
+                    csvContent += [g.internalId, g.platformId, g.date, g.followers, g.source].join(',') + '\r\n';
+                });
+            } else if (type === 'imports') {
+                filename = 'bayu_import_history.csv';
+                csvContent += 'BatchID,Filename,Platform,ImportDate,Records\r\n';
+                db.imports.forEach(i => {
+                    csvContent += [i.batchId, `"${(i.filename || '').replace(/"/g, '""')}"`, i.platform, i.importedAt, i.recordCount].join(',') + '\r\n';
+                });
+            }
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Export generated successfully.', 'success');
+        }
+
+        function generateSummaryReport() {
+            const periodDays = getActivePeriodDays();
+            const periodLabel = periodDays === 'all' ? 'All Time' : (periodDays === 'today' ? 'Today' : periodDays + ' Days');
+            const metrics = calculateDashboardMetrics(periodDays);
+            const rankings = calculatePlatformRankings(periodDays);
+            const insights = generateInsights(periodDays);
+            const recommendations = generateRecommendations(periodDays);
+            const topContent = getTopContent('views', 5);
+            const now = new Date().toLocaleString();
+
+            const reportWindow = window.open('', '_blank');
+            if (!reportWindow) {
+                showToast('Popup diblokir browser. Izinkan popup untuk membuat laporan.', 'error');
+                return;
+            }
+
+            reportWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>BAYU Summary Report - ${escapeHTML(periodLabel)}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; color: #1e293b; padding: 32px; max-width: 800px; margin: 0 auto; }
+                        h1 { font-size: 20px; margin-bottom: 4px; }
+                        .subtitle { color: #64748b; font-size: 12px; margin-bottom: 24px; }
+                        h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #2563eb; padding-bottom: 6px; margin-top: 28px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+                        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; }
+                        th { background: #f8fafc; text-transform: uppercase; font-size: 10px; color: #64748b; }
+                        .stat-grid { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+                        .stat-box { flex: 1; min-width: 140px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+                        .stat-label { font-size: 10px; text-transform: uppercase; color: #94a3b8; }
+                        .stat-value { font-size: 18px; font-weight: bold; margin-top: 4px; }
+                        ul { font-size: 12px; padding-left: 18px; }
+                        li { margin-bottom: 6px; }
+                        .footer { margin-top: 32px; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                </head>
+                <body>
+                    <h1>BAYU Social Intelligence - Summary Report</h1>
+                    <div class="subtitle">Period: ${escapeHTML(periodLabel)} &bull; Generated: ${escapeHTML(now)}</div>
+
+                    <h2>Key Metrics</h2>
+                    <div class="stat-grid">
+                        <div class="stat-box"><div class="stat-label">Total Followers</div><div class="stat-value">${metrics.totalFollowers.toLocaleString()}</div></div>
+                        <div class="stat-box"><div class="stat-label">Total Views</div><div class="stat-value">${metrics.totalViews.toLocaleString()}</div></div>
+                        <div class="stat-box"><div class="stat-label">Total Reach</div><div class="stat-value">${metrics.totalReach.toLocaleString()}</div></div>
+                        <div class="stat-box"><div class="stat-label">Exposure Score</div><div class="stat-value">${metrics.exposureScore}/100</div></div>
+                    </div>
+
+                    <h2>Insights</h2>
+                    <ul>
+                        ${insights.length > 0 ? insights.map(i => `<li>${escapeHTML(i)}</li>`).join('') : '<li>Tidak cukup data untuk menghasilkan insight.</li>'}
+                    </ul>
+
+                    <h2>Recommendations</h2>
+                    <ul>
+                        ${recommendations.length > 0 ? recommendations.map(r => `<li><strong>[${escapeHTML(r.priority)}]</strong> ${escapeHTML(r.text)}</li>`).join('') : '<li>Semua platform berjalan optimal, tidak ada tindakan mendesak.</li>'}
+                    </ul>
+
+                    <h2>Platform Ranking</h2>
+                    <table>
+                        <thead><tr><th>Platform</th><th>Followers</th><th>Growth</th><th>Views</th><th>Score</th></tr></thead>
+                        <tbody>
+                            ${rankings.map(p => `<tr><td>${escapeHTML(p.name)}</td><td>${p.followers.toLocaleString()}</td><td>${p.growth >= 0 ? '+' : ''}${p.growth.toLocaleString()}</td><td>${p.views.toLocaleString()}</td><td>${p.score}/100</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+
+                    <h2>Top 5 Content by Views</h2>
+                    <table>
+                        <thead><tr><th>Title</th><th>Platform</th><th>Views</th><th>Score</th></tr></thead>
+                        <tbody>
+                            ${topContent.length > 0 ? topContent.map(c => `<tr><td>${escapeHTML(c.contentTitle)}</td><td>${escapeHTML(c.platformId)}</td><td>${safeNum(c.views).toLocaleString()}</td><td>${c.computedScore || 0}</td></tr>`).join('') : '<tr><td colspan="4">Belum ada data konten.</td></tr>'}
+                        </tbody>
+                    </table>
+
+                    <div class="footer">Generated automatically by BAYU Social Intelligence V2.</div>
+                </body>
+                </html>
+            `);
+            reportWindow.document.close();
+            reportWindow.onload = () => {
+                reportWindow.focus();
+                reportWindow.print();
+            };
+        }
+
+        /* ==========================================
+           11. FILE IMPORT ENGINE (EXCEL, CSV, JSON)
+           ========================================== */
+        let activeImportData = {
+            platform: 'youtube',
+            filename: '',
+            rawRows: [],
+            headers: [],
+            mapping: { title: '', date: '', views: '', reach: '', likes: '', comments: '', shares: '', saves: '' }
+        };
+
+        function renderImportAnalytics() {
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            mainArea.innerHTML = `
+                <div class="space-y-6 max-w-3xl mx-auto">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="text-base font-bold text-slate-800 mb-1">Upload File Analytics</h3>
+                        <p class="text-xs text-slate-500 mb-6">Import CSV, JSON, or Excel analytics files. All parsing happens securely in your browser.</p>
+                        
+                        <div id="import-step-1" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Step 1: Select Platform *</label>
+                                <select id="import-platform-select" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none">
+                                    <option value="youtube">YouTube</option>
+                                    <option value="instagram">Instagram</option>
+                                    <option value="tiktok">TikTok</option>
+                                    <option value="facebook">Facebook</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Step 2: Select File (CSV, JSON, XLSX) *</label>
+                                <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50/50 hover:bg-slate-50 cursor-pointer" onclick="document.getElementById('file-upload-input').click()">
+                                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-blue-600 mb-2"></i>
+                                    <div class="text-xs font-semibold text-slate-700">Click to upload or drag and drop analytics file</div>
+                                    <div class="text-[11px] text-slate-400 mt-1">Supports CSV, XLSX, JSON</div>
+                                    <input type="file" id="file-upload-input" accept=".csv, .json, .xlsx, .xls" class="hidden" onchange="handleFileSelected(event)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleFileSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            activeImportData.filename = file.name;
+            activeImportData.platform = document.getElementById('import-platform-select').value;
+
+            const reader = new FileReader();
+            const ext = file.name.split('.').pop().toLowerCase();
+
+            if (ext === 'json') {
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        activeImportData.rawRows = Array.isArray(data) ? data : [data];
+                        activeImportData.headers = Object.keys(activeImportData.rawRows[0] || {});
+                        showColumnMappingView();
+                    } catch (err) {
+                        showToast('Invalid JSON file structure.', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            } else if (ext === 'xlsx' || ext === 'xls') {
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        const firstSheet = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheet];
+                        const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                        
+                        if (json.length === 0) throw new Error('Empty sheet');
+                        
+                        activeImportData.headers = json[0];
+                        activeImportData.rawRows = json.slice(1).map(row => {
+                            let obj = {};
+                            activeImportData.headers.forEach((h, idx) => {
+                                obj[h] = row[idx] !== undefined ? row[idx] : '';
+                            });
+                            return obj;
+                        }).filter(r => Object.values(r).some(val => val !== ''));
+                        
+                        showColumnMappingView();
+                    } catch (err) {
+                        showToast('Failed to parse Excel file.', 'error');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.onload = function(e) {
+                    try {
+                        const text = e.target.result;
+                        const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== '');
+                        if (lines.length === 0) throw new Error('Empty CSV');
+
+                        const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+                        activeImportData.headers = headers;
+
+                        activeImportData.rawRows = lines.slice(1).map(line => {
+                            const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^["']|["']$/g, ''));
+                            let obj = {};
+                            headers.forEach((h, idx) => {
+                                obj[h] = values[idx] !== undefined ? values[idx] : '';
+                            });
+                            return obj;
+                        }).filter(r => Object.values(r).some(val => val !== ''));
+
+                        showColumnMappingView();
+                    } catch (err) {
+                        showToast('Failed to parse CSV file.', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function showColumnMappingView() {
+            function findCol(keywords) {
+                for (let keyword of keywords) {
+                    const found = activeImportData.headers.find(header => header.toLowerCase().includes(keyword));
+                    if (found) return found;
+                }
+                return '';
+            }
+
+            activeImportData.mapping.title = findCol(['title', 'name', 'video', 'content', 'caption']);
+            activeImportData.mapping.date = findCol(['date', 'published', 'time', 'day']);
+            activeImportData.mapping.views = findCol(['view', 'play', 'impression']);
+            activeImportData.mapping.reach = findCol(['reach', 'accounts reached', 'unique']);
+            activeImportData.mapping.likes = findCol(['like', 'reaction']);
+            activeImportData.mapping.comments = findCol(['comment', 'reply']);
+            activeImportData.mapping.shares = findCol(['share']);
+            activeImportData.mapping.saves = findCol(['save', 'bookmark']);
+
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            mainArea.innerHTML = `
+                <div class="space-y-6 max-w-3xl mx-auto">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-slate-800">Map File Columns</h3>
+                            <span class="text-xs text-blue-600 font-bold uppercase">${activeImportData.filename}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-6">Match your file columns to BAYU Analytics schema fields.</p>
+
+                        <div class="space-y-4">
+                            ${renderMappingSelect('Content Title *', 'title', true)}
+                            ${renderMappingSelect('Published Date *', 'date', true)}
+                            ${renderMappingSelect('Views', 'views')}
+                            ${renderMappingSelect('Reach', 'reach')}
+                            ${renderMappingSelect('Likes', 'likes')}
+                            ${renderMappingSelect('Comments', 'comments')}
+                            ${renderMappingSelect('Shares', 'shares')}
+                            ${renderMappingSelect('Saves', 'saves')}
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 mt-8 pt-4 border-t border-slate-100">
+                            <button onclick="renderImportAnalytics()" class="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg">Cancel</button>
+                            <button onclick="executeImport()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg">Process & Import Data</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMappingSelect(label, fieldKey, required = false) {
+            const currentVal = activeImportData.mapping[fieldKey] || '';
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-3 items-center gap-2">
+                    <label class="text-xs font-semibold text-slate-700">${label}</label>
+                    <select onchange="activeImportData.mapping['${fieldKey}'] = this.value" class="md:col-span-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-700 outline-none">
+                        <option value="">-- Ignore Field --</option>
+                        ${activeImportData.headers.map(h => `<option value="${escapeHTML(h)}" ${h === currentVal ? 'selected' : ''}>${escapeHTML(h)}</option>`).join('')}
+                    </select>
+                </div>
+            `;
+        }
+
+        function executeImport() {
+            const m = activeImportData.mapping;
+            if (!m.title || !m.date) {
+                showToast('Please map Title and Date required fields.', 'error');
+                return;
+            }
+
+            const batchId = 'BATCH_' + Date.now();
+            let importedCount = 0;
+
+            activeImportData.rawRows.forEach(row => {
+                const titleVal = row[m.title];
+                const dateVal = row[m.date];
+                if (!titleVal || !dateVal) return;
+
+                const newRecord = {
+                    internalId: 'CNT_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                    batchId: batchId,
+                    platformId: activeImportData.platform,
+                    contentTitle: String(titleVal).trim(),
+                    contentType: 'Video',
+                    topic: 'Imported',
+                    publishedDate: String(dateVal).split('T')[0],
+                    views: safeNum(row[m.views]),
+                    reach: safeNum(row[m.reach]),
+                    likes: safeNum(row[m.likes]),
+                    comments: safeNum(row[m.comments]),
+                    shares: safeNum(row[m.shares]),
+                    saves: safeNum(row[m.saves]),
+                    source: 'import'
+                };
+
+                db.content.push(newRecord);
+                importedCount++;
+            });
+
+            db.imports.push({
+                batchId: batchId,
+                filename: activeImportData.filename,
+                platform: activeImportData.platform,
+                importedAt: new Date().toISOString().replace('T', ' ').substr(0, 19),
+                recordCount: importedCount
+            });
+
+            computeAllContentScores();
+            saveDatabase();
+            showToast(`Successfully imported ${importedCount} records.`, 'success');
+            navigateTo('content-intelligence');
+        }
+
+        function renderImportHistory() {
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            mainArea.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800">Import History Logs</h3>
+                            <p class="text-xs text-slate-500">Track and manage imported dataset batches.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                                        <th class="p-4 font-semibold">Batch ID</th>
+                                        <th class="p-4 font-semibold">File Name</th>
+                                        <th class="p-4 font-semibold">Platform</th>
+                                        <th class="p-4 font-semibold">Import Date</th>
+                                        <th class="p-4 font-semibold">Records</th>
+                                        <th class="p-4 font-semibold">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    ${db.imports.map(i => `
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="p-4 font-mono font-bold text-blue-600">${i.batchId}</td>
+                                            <td class="p-4 text-slate-800 font-semibold">${escapeHTML(i.filename)}</td>
+                                            <td class="p-4 uppercase text-slate-600">${i.platform}</td>
+                                            <td class="p-4 text-slate-500">${i.importedAt}</td>
+                                            <td class="p-4 text-slate-700 font-bold">${i.recordCount}</td>
+                                            <td class="p-4">
+                                                <button onclick="confirmDeleteImportBatch('${i.batchId}')" class="text-red-500 hover:text-red-700 font-semibold text-[11px]"><i class="fa-solid fa-trash mr-1"></i> Delete Batch</button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                    ${db.imports.length === 0 ? `<tr><td colspan="6" class="p-8 text-center text-slate-400 italic">No import history found.</td></tr>` : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function confirmDeleteImportBatch(batchId) {
+            openConfirmModal('Delete Import Batch', 'Deleting this batch will remove all content associated with this import. Proceed?', () => {
+                db.content = db.content.filter(c => c.batchId !== batchId);
+                db.imports = db.imports.filter(i => i.batchId !== batchId);
+                saveDatabase();
+                showToast('Import batch and associated records deleted.', 'success');
+                renderImportHistory();
+            });
+        }
+
+        /* ==========================================
+           12. DATA MANAGEMENT & SETTINGS
+           ========================================== */
+        function renderDataManagement() {
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            mainArea.innerHTML = `
+                <div class="space-y-6 max-w-3xl mx-auto">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800 mb-1">Data Management Center</h3>
+                            <p class="text-xs text-slate-500">Backup, restore, or wipe your account analytics data.</p>
+                        </div>
+
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                            <h4 class="text-xs font-bold text-slate-800 uppercase">Export Full Backup</h4>
+                            <p class="text-xs text-slate-600">Save complete database (JSON) to restore later.</p>
+                            <button onclick="exportJSONBackup()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm">
+                                <i class="fa-solid fa-download mr-1"></i> Download JSON Backup
+                            </button>
+                        </div>
+
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                            <h4 class="text-xs font-bold text-slate-800 uppercase">Restore Backup</h4>
+                            <p class="text-xs text-slate-600">Restore database from a previously downloaded JSON file.</p>
+                            <input type="file" id="restore-json-input" accept=".json" class="hidden" onchange="handleRestoreBackup(event)">
+                            <button onclick="document.getElementById('restore-json-input').click()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm">
+                                <i class="fa-solid fa-upload mr-1"></i> Upload & Restore JSON
+                            </button>
+                        </div>
+
+                        <div class="p-4 bg-red-50 rounded-xl border border-red-200 space-y-3">
+                            <h4 class="text-xs font-bold text-red-800 uppercase">Wipe All Application Data</h4>
+                            <p class="text-xs text-red-600">Clear all content, growth snapshots, and import logs for your account. This action cannot be reversed.</p>
+                            <button onclick="confirmWipeAllData()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm">
+                                <i class="fa-solid fa-trash mr-1"></i> Reset Database
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function exportJSONBackup() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `BAYU_BACKUP_${Date.now()}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast('Backup JSON downloaded successfully.', 'success');
+        }
+
+        function handleRestoreBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && Array.isArray(parsed.content)) {
+                        db = parsed;
+                        saveDatabase();
+                        showToast('Database restored successfully.', 'success');
+                        navigateTo('dashboard');
+                    } else {
+                        throw new Error('Invalid structure');
+                    }
+                } catch (err) {
+                    showToast('Failed to restore backup: Invalid JSON file.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function confirmWipeAllData() {
+            openConfirmModal('Wipe All Database Records', 'This will delete ALL content and growth history permanently. Proceed?', () => {
+                db.content = [];
+                db.growth = [];
+                db.imports = [];
+                saveDatabase();
+                showToast('All database records wiped.', 'success');
+                navigateTo('dashboard');
+            });
+        }
+
+        function renderSettings() {
+            const mainArea = document.getElementById('main-content-area');
+            if (!mainArea) return;
+
+            mainArea.innerHTML = `
+                <div class="space-y-6 max-w-2xl mx-auto">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="text-base font-bold text-slate-800">Dashboard Settings</h3>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Default Period View</label>
+                            <select id="settings-default-period" onchange="db.settings.defaultPeriod = this.value; saveDatabase(); showToast('Setting saved.', 'success')" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none">
+                                <option value="7" ${db.settings.defaultPeriod === '7' ? 'selected' : ''}>7 Days</option>
+                                <option value="14" ${db.settings.defaultPeriod === '14' ? 'selected' : ''}>14 Days</option>
+                                <option value="30" ${db.settings.defaultPeriod === '30' ? 'selected' : ''}>30 Days</option>
+                                <option value="all" ${db.settings.defaultPeriod === 'all' ? 'selected' : ''}>All Time</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* ==========================================
+           13. CRUD MODALS & UI HANDLERS
+           ========================================== */
+        
+        function openAddContentModal() {
+            document.getElementById('content-modal-title').textContent = 'Add New Content';
+            document.getElementById('content-form').reset();
+            document.getElementById('form-content-internal-id').value = '';
+            document.getElementById('form-published-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('content-modal').classList.remove('hidden');
+        }
+
+        function openEditContentModal(internalId) {
+            const c = db.content.find(item => item.internalId === internalId);
+            if (!c) return;
+
+            document.getElementById('content-modal-title').textContent = 'Edit Content Record';
+            document.getElementById('form-content-internal-id').value = c.internalId;
+            document.getElementById('form-platform').value = c.platformId || 'youtube';
+            document.getElementById('form-content-type').value = c.contentType || 'Video';
+            document.getElementById('form-content-id').value = c.contentId || '';
+            document.getElementById('form-topic').value = c.topic || '';
+            document.getElementById('form-content-title').value = c.contentTitle || '';
+            document.getElementById('form-published-date').value = c.publishedDate || '';
+            document.getElementById('form-views').value = c.views || 0;
+            document.getElementById('form-reach').value = c.reach || 0;
+            document.getElementById('form-impressions').value = c.impressions || 0;
+            document.getElementById('form-likes').value = c.likes || 0;
+            document.getElementById('form-comments').value = c.comments || 0;
+            document.getElementById('form-shares').value = c.shares || 0;
+            document.getElementById('form-saves').value = c.saves || 0;
+            document.getElementById('form-watch-time').value = c.watchTime || 0;
+            document.getElementById('form-followers-gained').value = c.followersGained || 0;
+
+            document.getElementById('content-modal').classList.remove('hidden');
+        }
+
+        function closeContentModal() {
+            document.getElementById('content-modal').classList.add('hidden');
+        }
+
+        function handleContentFormSubmit(event) {
+            event.preventDefault();
+            const internalId = document.getElementById('form-content-internal-id').value;
+            const publishedDate = document.getElementById('form-published-date').value;
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (publishedDate > todayStr) {
+                showToast('Published Date tidak boleh di masa depan.', 'error');
+                return;
+            }
+
+            const record = {
+                internalId: internalId || 'CNT_' + Date.now(),
+                platformId: document.getElementById('form-platform').value,
+                contentType: document.getElementById('form-content-type').value,
+                contentId: document.getElementById('form-content-id').value,
+                topic: document.getElementById('form-topic').value,
+                contentTitle: document.getElementById('form-content-title').value,
+                publishedDate: publishedDate,
+                views: safeNum(document.getElementById('form-views').value),
+                reach: safeNum(document.getElementById('form-reach').value),
+                impressions: safeNum(document.getElementById('form-impressions').value),
+                likes: safeNum(document.getElementById('form-likes').value),
+                comments: safeNum(document.getElementById('form-comments').value),
+                shares: safeNum(document.getElementById('form-shares').value),
+                saves: safeNum(document.getElementById('form-saves').value),
+                watchTime: safeNum(document.getElementById('form-watch-time').value),
+                followersGained: safeNum(document.getElementById('form-followers-gained').value),
+                source: 'manual'
+            };
+
+            const isDuplicate = db.content.some(c =>
+                c.internalId !== record.internalId &&
+                c.platformId === record.platformId &&
+                c.publishedDate === record.publishedDate &&
+                (c.contentTitle || '').trim().toLowerCase() === (record.contentTitle || '').trim().toLowerCase()
+            );
+            if (isDuplicate) {
+                const proceed = confirm('Konten dengan judul, platform, dan tanggal yang sama sudah ada. Tetap simpan sebagai data baru?');
+                if (!proceed) return;
+            }
+
+            if (internalId) {
+                const idx = db.content.findIndex(c => c.internalId === internalId);
+                if (idx !== -1) db.content[idx] = { ...db.content[idx], ...record };
+            } else {
+                db.content.push(record);
+            }
+
+            computeAllContentScores();
+            saveDatabase();
+            closeContentModal();
+            showToast('Content saved successfully.', 'success');
+            navigateTo(currentRoute);
+        }
+
+        function confirmDeleteContent(internalId) {
+            openConfirmModal('Delete Content', 'Are you sure you want to delete this content item?', () => {
+                db.content = db.content.filter(c => c.internalId !== internalId);
+                saveDatabase();
+                showToast('Content deleted.', 'success');
+                navigateTo(currentRoute);
+            });
+        }
+
+        // GROWTH CRUD
+        function openAddGrowthModal() {
+            document.getElementById('growth-modal-title').textContent = 'Add Follower Snapshot';
+            document.getElementById('growth-form').reset();
+            document.getElementById('form-growth-internal-id').value = '';
+            document.getElementById('form-growth-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('growth-modal').classList.remove('hidden');
+        }
+
+        function openEditGrowthModal(internalId) {
+            const g = db.growth.find(item => item.internalId === internalId);
+            if (!g) return;
+
+            document.getElementById('growth-modal-title').textContent = 'Edit Growth Record';
+            document.getElementById('form-growth-internal-id').value = g.internalId;
+            document.getElementById('form-growth-platform').value = g.platformId;
+            document.getElementById('form-growth-date').value = g.date;
+            document.getElementById('form-growth-followers').value = g.followers;
+
+            document.getElementById('growth-modal').classList.remove('hidden');
+        }
+
+        function closeGrowthModal() {
+            document.getElementById('growth-modal').classList.add('hidden');
+        }
+
+        function handleGrowthFormSubmit(event) {
+            event.preventDefault();
+            const internalId = document.getElementById('form-growth-internal-id').value;
+            const date = document.getElementById('form-growth-date').value;
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (date > todayStr) {
+                showToast('Tanggal snapshot tidak boleh di masa depan.', 'error');
+                return;
+            }
+
+            const record = {
+                internalId: internalId || 'GRW_' + Date.now(),
+                platformId: document.getElementById('form-growth-platform').value,
+                date: date,
+                followers: safeNum(document.getElementById('form-growth-followers').value),
+                source: 'manual'
+            };
+
+            const isDuplicate = db.growth.some(g =>
+                g.internalId !== record.internalId &&
+                g.platformId === record.platformId &&
+                g.date === record.date
+            );
+            if (isDuplicate) {
+                const proceed = confirm('Sudah ada snapshot follower untuk platform dan tanggal ini. Timpa/tambahkan data baru?');
+                if (!proceed) return;
+            }
+
+            if (internalId) {
+                const idx = db.growth.findIndex(g => g.internalId === internalId);
+                if (idx !== -1) db.growth[idx] = { ...db.growth[idx], ...record };
+            } else {
+                db.growth.push(record);
+            }
+
+            saveDatabase();
+            closeGrowthModal();
+            showToast('Growth snapshot saved.', 'success');
+            navigateTo(currentRoute);
+        }
+
+        function confirmDeleteGrowth(internalId) {
+            openConfirmModal('Delete Growth Snapshot', 'Are you sure you want to delete this growth record?', () => {
+                db.growth = db.growth.filter(g => g.internalId !== internalId);
+                saveDatabase();
+                showToast('Growth record deleted.', 'success');
+                navigateTo(currentRoute);
+            });
+        }
+
+        // CONTENT DETAIL DEEP DIVE MODAL
+        function openContentDetailModal(internalId) {
+            const c = db.content.find(item => item.internalId === internalId);
+            if (!c) return;
+
+            const m = computeContentMetrics(c);
+            const body = document.getElementById('content-detail-body');
+            
+            body.innerHTML = `
+                <div>
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 text-[10px] font-bold uppercase rounded">${c.platformId}</span>
+                    <h2 class="text-xl font-bold text-slate-800 mt-2">${escapeHTML(c.contentTitle)}</h2>
+                    <p class="text-xs text-slate-400 mt-1">Published on ${escapeHTML(c.publishedDate)} • Type: ${escapeHTML(c.contentType)} • Topic: ${escapeHTML(c.topic) || 'N/A'}</p>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        <div class="text-[10px] font-semibold text-slate-400 uppercase">Views</div>
+                        <div class="text-lg font-bold text-slate-800">${safeNum(c.views).toLocaleString()}</div>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        <div class="text-[10px] font-semibold text-slate-400 uppercase">Reach</div>
+                        <div class="text-lg font-bold text-slate-800">${safeNum(c.reach).toLocaleString()}</div>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        <div class="text-[10px] font-semibold text-slate-400 uppercase">Engagement Rate</div>
+                        <div class="text-lg font-bold text-blue-600">${m.engagementRate.toFixed(2)}%</div>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        <div class="text-[10px] font-semibold text-slate-400 uppercase">Content Score</div>
+                        <div class="text-lg font-bold text-purple-600">${c.computedScore || 0}/100</div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <h4 class="text-xs font-bold text-slate-700 uppercase mb-3">Interactions Breakdown</h4>
+                    <div class="grid grid-cols-3 gap-2 text-xs">
+                        <div>Likes: <span class="font-bold text-slate-800">${safeNum(c.likes).toLocaleString()}</span></div>
+                        <div>Comments: <span class="font-bold text-slate-800">${safeNum(c.comments).toLocaleString()}</span></div>
+                        <div>Shares: <span class="font-bold text-slate-800">${safeNum(c.shares).toLocaleString()}</span></div>
+                        <div>Saves: <span class="font-bold text-slate-800">${safeNum(c.saves).toLocaleString()}</span></div>
+                        <div>Followers Gained: <span class="font-bold text-emerald-600">+${safeNum(c.followersGained).toLocaleString()}</span></div>
+                        <div>Watch Time: <span class="font-bold text-slate-800">${safeNum(c.watchTime)} min</span></div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('content-detail-footer-info').textContent = `Record ID: ${c.internalId} | Source: ${c.source || 'manual'}`;
+            document.getElementById('content-detail-modal').classList.remove('hidden');
+        }
+
+        function closeContentDetailModal() {
+            document.getElementById('content-detail-modal').classList.add('hidden');
+        }
+
+        // CONFIRM MODAL HELPER
+        let confirmActionFn = null;
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            confirmActionFn = onConfirm;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+            if (confirmActionFn) confirmActionFn();
+            document.getElementById('confirm-modal').classList.add('hidden');
+        });
+
+        document.getElementById('confirm-cancel-btn').addEventListener('click', () => {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        });
+
+        // TOAST NOTIFICATIONS
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-xl shadow-lg border text-xs font-semibold flex items-center justify-between pointer-events-auto transform transition-all duration-300 ${
+                type === 'success' ? 'bg-emerald-800 text-white border-emerald-700' :
+                type === 'error' ? 'bg-red-800 text-white border-red-700' :
+                'bg-slate-800 text-white border-slate-700'
+            }`;
+
+            toast.innerHTML = `
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()" class="ml-4 text-slate-300 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
