@@ -1307,12 +1307,15 @@
 
     const platformMap = {};
     activeContent.forEach(c => {
-        // 1. Ambil dari properti platform/channel jika ada
-        let pName = c.platform || c.Platform || c.channel || c.Channel || c.source || c.Source || '';
+        // Ambil properti awal
+        let pRaw = (c.platform || c.Platform || c.channel || c.Channel || c.source || c.Source || '').toString().trim();
+        
+        // Gabungkan seluruh teks untuk analisis mendalam
+        const fullText = (pRaw + ' ' + (c.title || '') + ' ' + (c.caption || '') + ' ' + (c.url || '') + ' ' + (c.id || '')).toLowerCase();
 
-        // 2. Jika masih kosong, cek teks dari title/caption/url/id untuk menebak platformnya
-        const fullText = String(pName + ' ' + (c.title || '') + ' ' + (c.caption || '') + ' ' + (c.url || '')).toLowerCase();
+        let pName = '';
 
+        // Deteksi platform berdasarkan teks
         if (fullText.includes('tiktok') || fullText.includes('tt')) {
             pName = 'TikTok';
         } else if (fullText.includes('instagram') || fullText.includes('ig') || fullText.includes('reels')) {
@@ -1321,10 +1324,13 @@
             pName = 'YouTube';
         } else if (fullText.includes('facebook') || fullText.includes('fb')) {
             pName = 'Facebook';
-        } else if (!pName) {
-            pName = 'Other';
+        } else {
+            // Jika tidak ada kata kunci platform, pakai nilai awal atau fallback
+            pName = (pRaw && pRaw.toLowerCase() !== 'manual') ? pRaw : 'TikTok'; // Default ke TikTok jika manual
         }
 
+        platformMap[pName] = (platformMap[pName] || 0) + safeNum(c.views);
+    });
         platformMap[pName] = (platformMap[pName] || 0) + safeNum(c.views);
     });
 
