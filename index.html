@@ -1237,7 +1237,6 @@
             renderDashboardCharts(periodDays);
         }
        function renderDashboardCharts(periodDays) {
-    // Proteksi jika Chart.js belum selesai dimuat oleh browser
     if (typeof Chart === 'undefined') {
         console.warn('Chart.js belum siap, memuat ulang dalam 200ms...');
         setTimeout(() => renderDashboardCharts(periodDays), 200);
@@ -1307,15 +1306,10 @@
 
     const platformMap = {};
     activeContent.forEach(c => {
-        // Ambil properti awal
         let pRaw = (c.platform || c.Platform || c.channel || c.Channel || c.source || c.Source || '').toString().trim();
-        
-        // Gabungkan seluruh teks untuk analisis mendalam
         const fullText = (pRaw + ' ' + (c.title || '') + ' ' + (c.caption || '') + ' ' + (c.url || '') + ' ' + (c.id || '')).toLowerCase();
 
         let pName = '';
-
-        // Deteksi platform berdasarkan teks
         if (fullText.includes('tiktok') || fullText.includes('tt')) {
             pName = 'TikTok';
         } else if (fullText.includes('instagram') || fullText.includes('ig') || fullText.includes('reels')) {
@@ -1325,12 +1319,9 @@
         } else if (fullText.includes('facebook') || fullText.includes('fb')) {
             pName = 'Facebook';
         } else {
-            // Jika tidak ada kata kunci platform, pakai nilai awal atau fallback
-            pName = (pRaw && pRaw.toLowerCase() !== 'manual') ? pRaw : 'TikTok'; // Default ke TikTok jika manual
+            pName = (pRaw && pRaw.toLowerCase() !== 'manual') ? pRaw : 'TikTok';
         }
 
-        platformMap[pName] = (platformMap[pName] || 0) + safeNum(c.views);
-    });
         platformMap[pName] = (platformMap[pName] || 0) + safeNum(c.views);
     });
 
