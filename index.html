@@ -813,49 +813,49 @@
         }
 
         function calculateDashboardMetrics(periodDays = null) {
-            if (periodDays === null) periodDays = getActivePeriodDays();
-            computeAllContentScores();
+    if (periodDays === null) periodDays = getActivePeriodDays();
+    computeAllContentScores();
 
-            const activeContent = filterRecordsByPeriod(db.content, 'publishedDate', periodDays);
-            
-            let totalViews = 0;
-            let totalReach = 0;
-            let totalEngagement = 0;
-            let totalFollowersGained = 0;
-            let totalContentCount = activeContent.length;
+    const activeContent = filterRecordsByPeriod(db.content, 'publishedDate', periodDays);
+    
+    let totalViews = 0;
+    let totalReach = 0;
+    let totalEngagement = 0;
+    let totalContentCount = activeContent.length;
 
-            activeContent.forEach(c => {
-                const m = computeContentMetrics(c);
-                totalViews += safeNum(c.views);
-                totalReach += safeNum(c.reach);
-                totalEngagement += m.engagement;
-                totalFollowersGained += safeNum(c.followersGained);
-            });
+    activeContent.forEach(c => {
+        const m = computeContentMetrics(c);
+        totalViews += safeNum(c.views);
+        totalReach += safeNum(c.reach);
+        totalEngagement += m.engagement;
+    });
 
-            let totalFollowers = 0;
-            db.platforms.forEach(p => {
-                totalFollowers += getLatestFollowers(p.id);
-            });
+    let totalFollowersGained = 0;
+    db.platforms.forEach(p => {
+        totalFollowersGained += getPlatformGrowth(p.id, periodDays);
+    });
 
-            let avgER = 0;
-            if (totalContentCount > 0) {
-                const sumER = activeContent.reduce((acc, c) => acc + computeContentMetrics(c).engagementRate, 0);
-                avgER = sumER / totalContentCount;
-            }
+    let totalFollowers = totalFollowersGained;
 
-            const exposureScore = calculateExposureScore(periodDays);
+    let avgER = 0;
+    if (totalContentCount > 0) {
+        const sumER = activeContent.reduce((acc, c) => acc + computeContentMetrics(c).engagementRate, 0);
+        avgER = sumER / totalContentCount;
+    }
 
-            return {
-                totalFollowers,
-                totalViews,
-                totalReach,
-                totalEngagement,
-                avgER,
-                totalFollowersGained,
-                totalContentCount,
-                exposureScore
-            };
-        }
+    const exposureScore = calculateExposureScore(periodDays);
+
+    return {
+        totalFollowers,
+        totalViews,
+        totalReach,
+        totalEngagement,
+        avgER,
+        totalFollowersGained,
+        totalContentCount,
+        exposureScore
+    };
+}
 
         function calculateExposureScoreForRecords(activeContent) {
             if (activeContent.length === 0) return 0;
