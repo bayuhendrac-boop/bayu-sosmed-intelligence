@@ -1090,7 +1090,28 @@
                             <div class="text-xs text-emerald-600 font-medium mt-1">${metrics.exposureScore >= 60 ? 'High Exposure' : 'Moderate Exposure'} ${prevMetrics ? renderDeltaBadge(metrics.exposureScore, prevMetrics.exposureScore) : ''}</div>
                         </div>
                     </div>
+<!-- VISUAL CHARTS SECTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Chart Tren Performa -->
+            <div class="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h3 class="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
+                    <span>📈</span> Tren Performa & Interaksi
+                </h3>
+                <div class="h-64 relative">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
 
+            <!-- Chart Distribusi Platform -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h3 class="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
+                    <span>📊</span> Distribusi per Platform
+                </h3>
+                <div class="h-64 relative">
+                    <canvas id="platformChart"></canvas>
+                </div>
+            </div>
+        </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
                             <div class="flex items-center justify-between mb-4">
@@ -1213,7 +1234,92 @@
                     </div>
                 </div>
             `;
+            renderDashboardCharts(periodDays);
         }
+        function renderDashboardCharts(periodDays) {
+    const ctxTrend = document.getElementById('trendChart');
+    const ctxPlatform = document.getElementById('platformChart');
+    if (!ctxTrend || !ctxPlatform) return;
+
+    if (window.trendChartInstance) window.trendChartInstance.destroy();
+    if (window.platformChartInstance) window.platformChartInstance.destroy();
+
+    const activeContent = typeof filterRecordsByPeriod === 'function' 
+        ? filterRecordsByPeriod(db.content, 'publishedDate', periodDays)
+        : db.content;
+
+    const dateMap = {};
+    activeContent.forEach(c => {
+        const dateStr = c.publishedDate ? c.publishedDate.split('T')[0] : (c.date || 'N/A');
+        if (!dateMap[dateStr]) dateMap[dateStr] = { views: 0, engagement: 0 };
+        dateMap[dateStr].views += safeNum(c.views);
+        const likes = safeNum(c.likes);
+        const comments = safeNum(c.comments);
+        const shares = safeNum(c.shares);
+        const saves = safeNum(c.saves);
+        dateMap[dateStr].engagement += (likes + comments + shares + saves);
+    });
+
+    const labels = Object.keys(dateMap).sort();
+    const viewsData = labels.map(d => dateMap[d].views);
+    const engagementData = labels.map(d => dateMap[d].engagement);
+
+    window.trendChartInstance = new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+            labels: labels.length ? labels : ['No Data'],
+            datasets: [
+                {
+                    label: 'Views',
+                    data: viewsData.length ? viewsData : [0],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Engagement',
+                    data: engagementData.length ? engagementData : [0],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#94a3b8' } } },
+            scales: {
+                x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+        }
+    });
+
+    const platformMap = {};
+    activeContent.forEach(c => {
+        const pName = c.platform || 'Other';
+        platformMap[pName] = (platformMap[pName] || 0) + safeNum(c.views);
+    });
+
+    window.platformChartInstance = new Chart(ctxPlatform, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(platformMap).length ? Object.keys(platformMap) : ['No Data'],
+            datasets: [{
+                data: Object.values(platformMap).length ? Object.values(platformMap) : [1],
+                backgroundColor: ['#3b82f6', '#ec4899', '#f59e0b', '#8b5cf6', '#10b981']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } }
+        }
+    });
+}
 
         function getTopContent(metricKey, limit = 5) {
             const periodDays = getActivePeriodDays();
