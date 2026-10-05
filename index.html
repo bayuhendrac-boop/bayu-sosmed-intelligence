@@ -2897,8 +2897,12 @@ Baca angka-angka dan informasi yang benar-benar TERLIHAT di gambar ini. Kembalik
 Panduan membaca tiap field (istilahnya berbeda-beda tergantung platform, cari semua kemungkinan ini):
 - "views": bisa tertulis "Views", "Plays", "Video views", "Impressions" (kalau Views tidak ada sama sekali).
 - "reach": bisa tertulis "Reach", "Accounts reached", "Akun yang dijangkau", "Jangkauan", "Unique viewers", "People reached".
-- "watchTime": bisa tertulis "Watch time", "Average watch time", "Total watch time", "Minutes watched" — kalau satuannya jam/detik, konversikan ke MENIT (integer).
-- "contentUrl": cari di address bar browser pada screenshot, atau teks berupa link (biasanya diawali http/https atau mengandung nama domain platform).
+- "watchTime": PRIORITASKAN label "Total play time" atau "Total watch time" (ini angka akumulasi semua penonton, yang kita butuhkan). JANGAN pakai "Average watch time" atau "Avg. watch time" (itu rata-rata per penonton, beda kebutuhan, abaikan field itu meski ada di gambar).
+  Format waktu bisa bermacam-macam, konversikan SEMUA ke total MENIT (integer, boleh dibulatkan):
+  - Format gabungan seperti "7h:05m:44s" atau "7h 05m 44s" = (7×60) + 5 + (44/60) ≈ 425 menit.
+  - Format "1,234 min" atau "1234 minutes" = pakai angka itu langsung.
+  - Format hanya detik seperti "45s" = 45/60 menit (boleh dibulatkan ke 0 atau 1).
+- "contentUrl": HANYA isi kalau kamu menemukan link konten yang sebenarnya (formatnya seperti tiktok.com/@username/video/123..., instagram.com/p/..., youtube.com/watch?v=...). JANGAN isi dengan URL halaman dashboard/analytics itu sendiri (yang mengandung kata seperti "analytics", "studio", "insights", "business-suite") meski terlihat di address bar — itu bukan link kontennya, biarkan string kosong kalau yang terlihat cuma URL dashboard.
 
 Aturan penting:
 - Semua nilai angka harus INTEGER murni (contoh: 12500), bukan string, bukan yang ada koma/titik/singkatan seperti "12.5K" — konversikan singkatan ke angka penuh.
