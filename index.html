@@ -2879,22 +2879,30 @@
         async function analyzeScreenshotWithGemini(base64ImageData, mimeType, apiKey) {
             const prompt = `Kamu membaca screenshot dashboard analitik media sosial (bisa dari Instagram Insights, YouTube Studio, TikTok Analytics, atau Facebook Insights/Meta Business Suite).
 
-Baca angka-angka yang benar-benar TERLIHAT di gambar ini. Kembalikan HANYA JSON valid, tanpa markdown, tanpa penjelasan tambahan, persis dengan struktur berikut:
+Baca angka-angka dan informasi yang benar-benar TERLIHAT di gambar ini. Kembalikan HANYA JSON valid, tanpa markdown, tanpa penjelasan tambahan, persis dengan struktur berikut:
 
 {
   "contentTitle": "judul/caption konten kalau terlihat jelas, kalau tidak ada isi string kosong",
+  "contentUrl": "link/URL konten kalau terlihat di gambar (misal di address bar browser atau ada teks link), kalau tidak ada isi string kosong",
   "views": 0,
   "reach": 0,
   "likes": 0,
   "comments": 0,
   "shares": 0,
   "saves": 0,
+  "watchTime": 0,
   "followersGained": 0
 }
 
+Panduan membaca tiap field (istilahnya berbeda-beda tergantung platform, cari semua kemungkinan ini):
+- "views": bisa tertulis "Views", "Plays", "Video views", "Impressions" (kalau Views tidak ada sama sekali).
+- "reach": bisa tertulis "Reach", "Accounts reached", "Akun yang dijangkau", "Jangkauan", "Unique viewers", "People reached".
+- "watchTime": bisa tertulis "Watch time", "Average watch time", "Total watch time", "Minutes watched" — kalau satuannya jam/detik, konversikan ke MENIT (integer).
+- "contentUrl": cari di address bar browser pada screenshot, atau teks berupa link (biasanya diawali http/https atau mengandung nama domain platform).
+
 Aturan penting:
 - Semua nilai angka harus INTEGER murni (contoh: 12500), bukan string, bukan yang ada koma/titik/singkatan seperti "12.5K" — konversikan singkatan ke angka penuh.
-- Kalau suatu metrik tidak terlihat sama sekali di gambar, isi dengan 0. JANGAN mengarang atau menebak angka yang tidak ada di gambar.
+- Kalau suatu field tidak terlihat sama sekali di gambar, isi dengan 0 (untuk angka) atau string kosong "" (untuk teks). JANGAN mengarang atau menebak nilai yang tidak ada di gambar.
 - Jangan tambahkan field lain selain yang diminta di atas.`;
 
             const text = await geminiRequest([{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64ImageData } }], true);
@@ -2913,6 +2921,7 @@ Aturan penting:
                 comments: 'form-comments',
                 shares: 'form-shares',
                 saves: 'form-saves',
+                watchTime: 'form-watch-time',
                 followersGained: 'form-followers-gained'
             };
             Object.keys(fieldMap).forEach(key => {
@@ -2924,6 +2933,10 @@ Aturan penting:
             const titleEl = document.getElementById('form-content-title');
             if (titleEl && !titleEl.value && result.contentTitle) {
                 titleEl.value = result.contentTitle;
+            }
+            const urlEl = document.getElementById('form-content-id');
+            if (urlEl && !urlEl.value && result.contentUrl) {
+                urlEl.value = result.contentUrl;
             }
         }
 
