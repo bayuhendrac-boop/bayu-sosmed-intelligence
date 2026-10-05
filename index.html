@@ -108,10 +108,13 @@
                     <i class="fa-solid fa-users w-5 text-center"></i> Audience
                 </a>
                 <a href="#growth" data-page="growth" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
-                    <i class="fa-solid fa-chart-line w-5 text-center"></i> Growth
+                    <i class="fa-solid fa-chart-line w-5 text-center"></i> Growth <span id="growth-reminder-badge" class="hidden ml-auto px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-[10px] font-bold"></span>
                 </a>
                 <a href="#exposure-intelligence" data-page="exposure-intelligence" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
                     <i class="fa-solid fa-bullseye w-5 text-center"></i> Exposure Intelligence
+                </a>
+                <a href="#ai-chat" data-page="ai-chat" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
+                    <i class="fa-solid fa-comments w-5 text-center"></i> Tanya Data (AI)
                 </a>
                 <a href="#recommendations" data-page="recommendations" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 custom-transition">
                     <i class="fa-solid fa-lightbulb w-5 text-center"></i> Recommendations
@@ -204,7 +207,21 @@
             <div class="p-6 overflow-y-auto flex-1">
                 <form id="content-form" onsubmit="handleContentFormSubmit(event)" class="space-y-4">
                     <input type="hidden" id="form-content-internal-id">
-                    
+
+                    <div class="p-3 bg-purple-50 border border-purple-100 rounded-lg">
+                        <div class="flex items-center justify-between gap-3 flex-wrap">
+                            <div class="text-xs text-purple-800">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>
+                                <strong>Isi otomatis dari screenshot analytics</strong> pakai AI (Gemini Vision)
+                            </div>
+                            <button type="button" onclick="document.getElementById('ai-screenshot-input').click()" id="ai-screenshot-btn" class="bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap">
+                                <i class="fa-solid fa-camera mr-1"></i> Upload Screenshot
+                            </button>
+                            <input type="file" id="ai-screenshot-input" accept="image/*" class="hidden" onchange="handleScreenshotAIUpload(event)">
+                        </div>
+                        <p id="ai-screenshot-status" class="text-[10px] text-purple-500 mt-1.5 hidden"></p>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Platform *</label>
@@ -237,7 +254,9 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Topic</label>
-                            <input type="text" id="form-topic" placeholder="e.g. Tutorial, Vlogs, Tech" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="form-topic" list="topic-suggestions" placeholder="e.g. Tutorial, Vlogs, Tech" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <datalist id="topic-suggestions"></datalist>
+                            <p class="text-[10px] text-slate-400 mt-1">Pilih dari topik yang sudah ada supaya konsisten, atau ketik topik baru.</p>
                         </div>
                     </div>
 
@@ -292,6 +311,10 @@
                                 <label class="block text-[11px] font-medium text-slate-600 mb-1">Followers Gained</label>
                                 <input type="number" min="0" id="form-followers-gained" value="0" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none">
                             </div>
+                        </div>
+                        <div class="mt-3 p-2.5 bg-amber-50 border border-amber-100 rounded-lg text-[11px] text-amber-800 flex items-start gap-2">
+                            <i class="fa-solid fa-circle-info mt-0.5"></i>
+                            <span><strong>Followers Gained</strong> = perkiraan followers baru dari konten ini saja (untuk lihat konten mana yang paling efektif). Ini <strong>bukan</strong> total followers akun kamu, dan tidak menghitung yang unfollow. Untuk total followers yang akurat, isi lewat menu <strong>Growth &rarr; Add Growth Record</strong> secara rutin.</span>
                         </div>
                     </div>
 
@@ -391,16 +414,39 @@
                 content: [],
                 growth: [],
                 imports: [],
+                importMappings: {},
                 settings: {
                     dateFormat: 'YYYY-MM-DD',
                     numberFormat: 'standard',
-                    defaultPeriod: '30'
+                    defaultPeriod: '30',
+                    classificationMode: 'relative',
+                    absoluteThresholds: { reach: 10000, views: 50000, er: 10, followersGained: 100 }
                 },
                 version: '2.0'
             };
         }
 
         let db = createEmptyDatabase();
+
+        // Menjaga kompatibilitas data lama (pengguna existing) saat skema baru ditambahkan
+        function normalizeDatabaseSchema() {
+            if (!db.importMappings) db.importMappings = {};
+            if (!db.settings) db.settings = {};
+            if (!db.settings.classificationMode) db.settings.classificationMode = 'relative';
+            if (!db.settings.absoluteThresholds) {
+                db.settings.absoluteThresholds = { reach: 10000, views: 50000, er: 10, followersGained: 100 };
+            }
+            if (db.settings.geminiApiKey === undefined) {
+                db.settings.geminiApiKey = '';
+            }
+            // Migrasi otomatis: kalau sebelumnya pernah simpan key di localStorage (versi lama),
+            // pindahkan ke Firestore sekali saja, lalu bersihkan localStorage.
+            const legacyLocalKey = localStorage.getItem('bayu_gemini_api_key');
+            if (legacyLocalKey && !db.settings.geminiApiKey) {
+                db.settings.geminiApiKey = legacyLocalKey;
+                localStorage.removeItem('bayu_gemini_api_key');
+            }
+        }
 
         // REFERENSI FIRESTORE TERISOLASI (1 USER 1 DATA)
         const USER_DOC_REF = (uid) => firestoreDB.collection('users').doc(uid);
@@ -572,6 +618,7 @@
                     .onSnapshot(docSnap => {
                         if (docSnap.exists) {
                             db = docSnap.data();
+                            normalizeDatabaseSchema();
                         } else {
                             // User Baru -> Buat Dokumen Kosong Terisolasi
                             db = createEmptyDatabase();
@@ -607,6 +654,7 @@
             'growth': renderGrowth,
             'exposure-intelligence': renderExposureIntelligence,
             'recommendations': renderRecommendations,
+            'ai-chat': renderAIChat,
             'reports': renderReports,
             'import-analytics': renderImportAnalytics,
             'import-history': renderImportHistory,
@@ -645,6 +693,7 @@
                 'growth': 'Followers & Growth Analytics',
                 'exposure-intelligence': 'Exposure Intelligence',
                 'recommendations': 'Actionable Recommendations',
+                'ai-chat': 'Tanya Data (AI)',
                 'reports': 'Reports & Export Center',
                 'import-analytics': 'Upload File Analytics',
                 'import-history': 'Import History Management',
@@ -660,6 +709,7 @@
             if (mainArea) {
                 mainArea.innerHTML = '';
                 routes[routeKey]();
+                updateGrowthReminderBadge();
             }
         }
 
@@ -749,15 +799,29 @@
             const contents = db.content;
             if (contents.length === 0) return;
 
+            const mode = (db.settings && db.settings.classificationMode) || 'relative';
+            const absDefaults = { reach: 10000, views: 50000, er: 10, followersGained: 100 };
+            const abs = Object.assign({}, absDefaults, (db.settings && db.settings.absoluteThresholds) || {});
+
             const platforms = ['youtube', 'instagram', 'tiktok', 'facebook'];
             platforms.forEach(plat => {
                 const pContent = contents.filter(c => c.platformId === plat);
                 if (pContent.length === 0) return;
 
-                let maxReach = Math.max(...pContent.map(c => safeNum(c.reach)), 1);
-                let maxViews = Math.max(...pContent.map(c => safeNum(c.views)), 1);
-                let maxER = Math.max(...pContent.map(c => computeContentMetrics(c).engagementRate), 0.01);
-                let maxFollowers = Math.max(...pContent.map(c => safeNum(c.followersGained)), 1);
+                let maxReach, maxViews, maxER, maxFollowers;
+                if (mode === 'absolute') {
+                    // Mode absolut: skor dibandingkan terhadap target tetap, tidak berubah walau ada konten baru
+                    maxReach = Math.max(safeNum(abs.reach), 1);
+                    maxViews = Math.max(safeNum(abs.views), 1);
+                    maxER = Math.max(safeNum(abs.er), 0.01);
+                    maxFollowers = Math.max(safeNum(abs.followersGained), 1);
+                } else {
+                    // Mode relatif (default lama): skor dibandingkan terhadap nilai tertinggi di antara konten yang ada saat ini
+                    maxReach = Math.max(...pContent.map(c => safeNum(c.reach)), 1);
+                    maxViews = Math.max(...pContent.map(c => safeNum(c.views)), 1);
+                    maxER = Math.max(...pContent.map(c => computeContentMetrics(c).engagementRate), 0.01);
+                    maxFollowers = Math.max(...pContent.map(c => safeNum(c.followersGained)), 1);
+                }
 
                 pContent.forEach(c => {
                     const metrics = computeContentMetrics(c);
@@ -1090,6 +1154,13 @@
                             <div class="text-xs text-emerald-600 font-medium mt-1">${metrics.exposureScore >= 60 ? 'High Exposure' : 'Moderate Exposure'} ${prevMetrics ? renderDeltaBadge(metrics.exposureScore, prevMetrics.exposureScore) : ''}</div>
                         </div>
                     </div>
+<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider"><i class="fa-solid fa-wand-magic-sparkles text-purple-600 mr-1"></i> Ringkasan AI</h3>
+                            <button id="ai-insight-btn" onclick="generateAIInsight()" class="bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50">Buat Ringkasan</button>
+                        </div>
+                        <div id="ai-insight-body" class="text-xs text-slate-700 leading-relaxed"><span class="text-slate-400 italic">Klik "Buat Ringkasan" untuk analisis naratif dari periode terpilih (butuh API Key Gemini di Settings).</span></div>
+                    </div>
 <!-- VISUAL CHARTS SECTION -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <!-- Chart Tren Performa -->
@@ -1406,7 +1477,10 @@
         /* ==========================================
            6. RENDER VIEWS: PLATFORM DETAIL
            ========================================== */
+        let platformPage = 1, platformPageFor = '';
+        function changePlatformPage(d) { platformPage = Math.max(1, platformPage + d); renderPlatformDetail(platformPageFor); }
         function renderPlatformDetail(platformId) {
+            if (platformPageFor !== platformId) { platformPageFor = platformId; platformPage = 1; }
             const platform = db.platforms.find(p => p.id === platformId);
             const periodDays = getActivePeriodDays();
             const pContent = filterRecordsByPeriod(db.content.filter(c => c.platformId === platformId), 'publishedDate', periodDays);
@@ -1481,7 +1555,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    ${pContent.map(c => {
+                                    ${paginate(pContent, platformPage).map(c => {
                                         const m = computeContentMetrics(c);
                                         return `
                                             <tr class="hover:bg-slate-50">
@@ -1500,6 +1574,7 @@
                                         `;
                                     }).join('')}
                                     ${pContent.length === 0 ? `<tr><td colspan="8" class="p-6 text-center text-slate-400 italic">No content found for ${platform.name} in this period.</td></tr>` : ''}
+                                    ${pContent.length > PAGE_SIZE ? `<tr><td colspan="8" class="p-3">${paginationControls(pContent.length, platformPage, 'changePlatformPage')}</td></tr>` : ''}
                                 </tbody>
                             </table>
                         </div>
@@ -1629,7 +1704,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    ${filtered.map(c => `
+                                    ${paginate(filtered, contentPage).map(c => `
                                         <tr class="hover:bg-slate-50">
                                             <td class="p-4 font-bold text-slate-800 max-w-xs truncate cursor-pointer hover:text-blue-600" onclick="openContentDetailModal('${c.internalId}')">${escapeHTML(c.contentTitle)}</td>
                                             <td class="p-4 uppercase font-semibold text-slate-600">${escapeHTML(c.platformId)}</td>
@@ -1653,6 +1728,7 @@
                                         </tr>
                                     `).join('')}
                                     ${filtered.length === 0 ? `<tr><td colspan="11" class="p-8 text-center text-slate-400 italic">No content found matching your filters.</td></tr>` : ''}
+                                    ${filtered.length > PAGE_SIZE ? `<tr><td colspan="11" class="p-3">${paginationControls(filtered.length, contentPage)}</td></tr>` : ''}
                                 </tbody>
                             </table>
                         </div>
@@ -1661,13 +1737,13 @@
             `;
         }
 
-        function handleContentSearch(val) { contentSearchQuery = val; renderContentIntelligence(); }
-        function handleContentPlatformFilter(val) { contentPlatformFilter = val; renderContentIntelligence(); }
-        function handleContentSort(val) { contentSortBy = val; renderContentIntelligence(); }
-        function handleContentClassFilter(val) { contentClassFilter = val; renderContentIntelligence(); }
-        function handleContentTypeFilter(val) { contentTypeFilter = val; renderContentIntelligence(); }
-        function handleContentDateFrom(val) { contentDateFrom = val; renderContentIntelligence(); }
-        function handleContentDateTo(val) { contentDateTo = val; renderContentIntelligence(); }
+        function handleContentSearch(val) { contentSearchQuery = val; contentPage = 1; renderContentIntelligence(); const el = document.getElementById('content-search-input'); if (el) { el.focus(); el.setSelectionRange(val.length, val.length); } }
+        function handleContentPlatformFilter(val) { contentPlatformFilter = val; contentPage = 1; renderContentIntelligence(); }
+        function handleContentSort(val) { contentSortBy = val; contentPage = 1; renderContentIntelligence(); }
+        function handleContentClassFilter(val) { contentClassFilter = val; contentPage = 1; renderContentIntelligence(); }
+        function handleContentTypeFilter(val) { contentTypeFilter = val; contentPage = 1; renderContentIntelligence(); }
+        function handleContentDateFrom(val) { contentDateFrom = val; contentPage = 1; renderContentIntelligence(); }
+        function handleContentDateTo(val) { contentDateTo = val; contentPage = 1; renderContentIntelligence(); }
 
         function clearAdvancedFilters() {
             contentClassFilter = '';
@@ -1752,6 +1828,24 @@
                         </button>
                     </div>
 
+                    <div class="bg-blue-50/60 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
+                        <i class="fa-solid fa-circle-info text-blue-600 mt-0.5"></i>
+                        <div class="text-xs text-blue-900 space-y-1">
+                            <p><strong>Apa bedanya dengan "Followers Gained" di form Add Content?</strong></p>
+                            <p>"Followers Gained" per konten hanya mencatat perkiraan penambahan dari video/postingan tertentu — cocok untuk melihat konten mana yang paling efektif. Angka itu <strong>tidak memperhitungkan unfollow</strong>, jadi tidak bisa dijadikan total followers akun kamu.</p>
+                            <p><strong>Growth Snapshot</strong> (di halaman ini) adalah <strong>total followers/subscriber asli</strong> dari akun kamu (cek langsung ke Instagram/YouTube Studio/TikTok/Facebook), dicatat pada tanggal tertentu. Rutin isi ini (misalnya tiap minggu) supaya grafik tren & pertumbuhan yang ditampilkan akurat, termasuk saat ada yang unfollow.</p>
+                        </div>
+                    </div>
+
+                    ${db.growth.length === 0 ? `
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5"></i>
+                        <div class="text-xs text-amber-800">
+                            <strong>Belum ada Growth Snapshot.</strong> Angka followers di Dashboard saat ini masih dihitung dari total "Followers Gained" per konten (perkiraan, tidak menghitung unfollow). Klik "Add Growth Record" di atas untuk mulai mencatat total followers asli akun kamu.
+                        </div>
+                    </div>
+                    ` : ''}
+
                     <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                         <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4">Follower Trend</h4>
                         ${db.growth.length === 0
@@ -1793,6 +1887,7 @@
                 </div>
             `;
 
+            renderGrowthForecast();
             if (db.growth.length > 0) {
                 renderGrowthTrendChart(periodDays);
             }
@@ -1837,7 +1932,7 @@
                 growthTrendChartInstance.destroy();
             }
 
-            growthTrendChartInstance = new Chart(canvas.getContext('2d'), {
+            growthTrendChartInstance = makeGrowthChart(canvas.getContext('2d'), {
                 type: 'line',
                 data: { labels: allDates, datasets: datasets },
                 options: {
@@ -2281,6 +2376,19 @@
             activeImportData.mapping.shares = findCol(['share']);
             activeImportData.mapping.saves = findCol(['save', 'bookmark']);
 
+            // Terapkan template mapping tersimpan dari import sebelumnya (kalau nama kolomnya cocok dengan file ini)
+            let usedSavedMappingTemplate = false;
+            const savedMapping = (db.importMappings && db.importMappings[activeImportData.platform]) || null;
+            if (savedMapping) {
+                Object.keys(savedMapping).forEach(field => {
+                    const savedCol = savedMapping[field];
+                    if (savedCol && activeImportData.headers.includes(savedCol)) {
+                        activeImportData.mapping[field] = savedCol;
+                        usedSavedMappingTemplate = true;
+                    }
+                });
+            }
+
             const mainArea = document.getElementById('main-content-area');
             if (!mainArea) return;
 
@@ -2291,7 +2399,13 @@
                             <h3 class="text-base font-bold text-slate-800">Map File Columns</h3>
                             <span class="text-xs text-blue-600 font-bold uppercase">${activeImportData.filename}</span>
                         </div>
-                        <p class="text-xs text-slate-500 mb-6">Match your file columns to BAYU Analytics schema fields.</p>
+                        <p class="text-xs text-slate-500 mb-4">Match your file columns to BAYU Analytics schema fields.</p>
+                        ${usedSavedMappingTemplate ? `
+                        <div class="mb-4 p-2.5 bg-emerald-50 border border-emerald-100 rounded-lg text-[11px] text-emerald-800 flex items-start gap-2">
+                            <i class="fa-solid fa-circle-check mt-0.5"></i>
+                            <span>Menggunakan template mapping kolom yang tersimpan dari import <strong>${escapeHTML(activeImportData.platform)}</strong> sebelumnya. Ubah manual di bawah kalau perlu.</span>
+                        </div>
+                        ` : ''}
 
                         <div class="space-y-4">
                             ${renderMappingSelect('Content Title *', 'title', true)}
@@ -2332,6 +2446,10 @@
                 showToast('Please map Title and Date required fields.', 'error');
                 return;
             }
+
+            // Simpan mapping ini sebagai template untuk platform ini, supaya import berikutnya otomatis terisi
+            if (!db.importMappings) db.importMappings = {};
+            db.importMappings[activeImportData.platform] = { ...m };
 
             const batchId = 'BATCH_' + Date.now();
             let importedCount = 0;
@@ -2479,14 +2597,20 @@
         }
 
         function exportJSONBackup() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+            // Redaksi API key sebelum di-export, supaya tidak ikut tersebar lewat file backup
+            const exportableDb = JSON.parse(JSON.stringify(db));
+            if (exportableDb.settings && exportableDb.settings.geminiApiKey) {
+                exportableDb.settings.geminiApiKey = '';
+            }
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportableDb, null, 2));
             const dlAnchor = document.createElement('a');
             dlAnchor.setAttribute("href", dataStr);
             dlAnchor.setAttribute("download", `BAYU_BACKUP_${Date.now()}.json`);
             document.body.appendChild(dlAnchor);
             dlAnchor.click();
             dlAnchor.remove();
-            showToast('Backup JSON downloaded successfully.', 'success');
+            showToast('Backup JSON downloaded successfully. (API Key tidak disertakan demi keamanan)', 'success');
         }
 
         function handleRestoreBackup(event) {
@@ -2498,9 +2622,15 @@
                 try {
                     const parsed = JSON.parse(e.target.result);
                     if (parsed && Array.isArray(parsed.content)) {
+                        // Simpan API key yang sedang aktif, karena file backup sengaja tidak menyertakannya
+                        const existingGeminiKey = (db.settings && db.settings.geminiApiKey) || '';
                         db = parsed;
+                        normalizeDatabaseSchema();
+                        if (!db.settings.geminiApiKey && existingGeminiKey) {
+                            db.settings.geminiApiKey = existingGeminiKey;
+                        }
                         saveDatabase();
-                        showToast('Database restored successfully.', 'success');
+                        showToast('Database restored successfully. (API Key tetap dipertahankan)', 'success');
                         navigateTo('dashboard');
                     } else {
                         throw new Error('Invalid structure');
@@ -2527,8 +2657,40 @@
             const mainArea = document.getElementById('main-content-area');
             if (!mainArea) return;
 
+            const savedGeminiKey = db.settings.geminiApiKey || '';
+
             mainArea.innerHTML = `
                 <div class="space-y-6 max-w-2xl mx-auto">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-purple-600"></i> AI Vision (Google Gemini)</h3>
+                            <p class="text-xs text-slate-500 mt-1">Isi API Key untuk mengaktifkan fitur "Isi dari Screenshot (AI)" saat menambah konten. Gemini API punya tier gratis (1.500 request/hari), tidak perlu kartu kredit.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Gemini API Key</label>
+                            <div class="flex items-center gap-2">
+                                <input type="password" id="settings-gemini-key" value="${escapeHTML(savedGeminiKey)}" placeholder="Tempel API Key kamu di sini" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none">
+                                <button onclick="saveGeminiApiKey()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg whitespace-nowrap">Simpan</button>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-2">
+                                Belum punya API Key? Buat gratis di
+                                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="text-blue-600 font-semibold hover:underline">aistudio.google.com/apikey</a>.
+                                Key kini tersimpan di akun kamu (Firestore) dan otomatis tersedia di semua device tempat kamu login.
+                            </p>
+                            <p id="gemini-key-status" class="text-[11px] font-semibold mt-1 ${savedGeminiKey ? 'text-emerald-600' : 'text-slate-400'}">${savedGeminiKey ? '✓ API Key tersimpan & tersinkron ke akun kamu.' : 'Belum ada API Key tersimpan.'}</p>
+                            <div class="mt-3 flex items-center gap-2 flex-wrap">
+                                <input type="text" id="settings-gemini-model" value="${escapeHTML(db.settings.geminiModel || '')}" placeholder="Model (opsional), mis. gemini-3.1-flash-lite" class="flex-1 min-w-[200px] bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none">
+                                <button onclick="saveGeminiModel()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">Simpan Model</button>
+                                <button onclick="testGeminiConnection()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">Tes Koneksi</button>
+                            </div>
+                            <p id="gemini-test-status" class="text-[11px] mt-1 text-slate-400">Kosongkan kolom model agar dipilih otomatis; sistem berpindah ke model lain jika satu model dihentikan Google.</p>
+                            <div class="mt-3 p-2.5 bg-amber-50 border border-amber-100 rounded-lg text-[10px] text-amber-800">
+                                <i class="fa-solid fa-shield-halved mr-1"></i>
+                                <strong>Penting:</strong> Karena key ini ikut tersimpan di akun kamu, pastikan <strong>Firestore Security Rules</strong> di Firebase Console sudah membatasi akses hanya untuk pemilik data (uid yang cocok). Key ini <strong>tidak akan ikut ter-download</strong> saat kamu klik "Download JSON Backup" di menu Data Management — demi keamanan tambahan.
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
                         <h3 class="text-base font-bold text-slate-800">Dashboard Settings</h3>
                         <div>
@@ -2541,19 +2703,410 @@
                             </select>
                         </div>
                     </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800">Content Classification Mode</h3>
+                            <p class="text-xs text-slate-500 mt-1">Menentukan cara sistem memberi label Viral / Scale / Keep / Review pada konten.</p>
+                        </div>
+                        <div class="space-y-3">
+                            <label class="flex items-start gap-3 p-3 rounded-lg border ${(db.settings.classificationMode || 'relative') === 'relative' ? 'border-blue-300 bg-blue-50/50' : 'border-slate-200'} cursor-pointer">
+                                <input type="radio" name="classification-mode" value="relative" ${(db.settings.classificationMode || 'relative') === 'relative' ? 'checked' : ''} onchange="handleClassificationModeChange('relative')" class="mt-1">
+                                <div>
+                                    <div class="text-xs font-bold text-slate-800">Relatif (default)</div>
+                                    <div class="text-[11px] text-slate-500">Skor dibandingkan terhadap konten terbaik yang ada saat ini per platform. Label bisa berubah kalau ada konten baru yang jauh lebih tinggi performanya.</div>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-3 p-3 rounded-lg border ${db.settings.classificationMode === 'absolute' ? 'border-blue-300 bg-blue-50/50' : 'border-slate-200'} cursor-pointer">
+                                <input type="radio" name="classification-mode" value="absolute" ${db.settings.classificationMode === 'absolute' ? 'checked' : ''} onchange="handleClassificationModeChange('absolute')" class="mt-1">
+                                <div>
+                                    <div class="text-xs font-bold text-slate-800">Absolut (target tetap)</div>
+                                    <div class="text-[11px] text-slate-500">Skor dibandingkan terhadap angka target tetap yang kamu tentukan sendiri di bawah. Label lebih stabil, tidak berubah walau ada konten baru.</div>
+                                </div>
+                            </label>
+                        </div>
+
+                        ${db.settings.classificationMode === 'absolute' ? `
+                        <div class="pt-3 border-t border-slate-100 grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Target Reach (skor maks)</label>
+                                <input type="number" min="1" value="${db.settings.absoluteThresholds.reach}" onchange="handleAbsoluteThresholdChange('reach', this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Target Views (skor maks)</label>
+                                <input type="number" min="1" value="${db.settings.absoluteThresholds.views}" onchange="handleAbsoluteThresholdChange('views', this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Target Engagement Rate % (skor maks)</label>
+                                <input type="number" min="0.1" step="0.1" value="${db.settings.absoluteThresholds.er}" onchange="handleAbsoluteThresholdChange('er', this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Target Followers Gained (skor maks)</label>
+                                <input type="number" min="1" value="${db.settings.absoluteThresholds.followersGained}" onchange="handleAbsoluteThresholdChange('followersGained', this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none">
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-slate-400">Konten yang mencapai angka target ini akan mendapat skor penuh (100) untuk metrik tersebut.</p>
+                        ` : ''}
+                    </div>
                 </div>
             `;
+        }
+
+        function saveGeminiApiKey() {
+            const input = document.getElementById('settings-gemini-key');
+            const key = (input?.value || '').trim();
+            const statusEl = document.getElementById('gemini-key-status');
+
+            if (!db.settings) db.settings = {};
+            db.settings.geminiApiKey = key;
+            saveDatabase();
+
+            if (!key) {
+                if (statusEl) {
+                    statusEl.textContent = 'Belum ada API Key tersimpan.';
+                    statusEl.className = 'text-[11px] font-semibold mt-1 text-slate-400';
+                }
+                showToast('API Key dihapus.', 'success');
+                return;
+            }
+
+            if (statusEl) {
+                statusEl.textContent = '✓ API Key tersimpan & tersinkron ke akun kamu.';
+                statusEl.className = 'text-[11px] font-semibold mt-1 text-emerald-600';
+            }
+            showToast('API Key Gemini disimpan ke akun kamu.', 'success');
+        }
+
+        function saveGeminiModel() {
+            db.settings.geminiModel = (document.getElementById('settings-gemini-model')?.value || '').trim();
+            geminiWorkingModel = null;
+            saveDatabase();
+            showToast('Model Gemini disimpan.', 'success');
+        }
+        async function testGeminiConnection() {
+            const el = document.getElementById('gemini-test-status');
+            if (!el) return;
+            el.className = 'text-[11px] mt-1 text-purple-500';
+            el.textContent = 'Menguji koneksi...';
+            try {
+                await geminiRequest([{ text: 'Balas hanya dengan kata: OK' }], false);
+                el.className = 'text-[11px] mt-1 font-semibold text-emerald-600';
+                el.textContent = '✓ Terhubung. Model aktif: ' + geminiWorkingModel;
+            } catch (e) {
+                el.className = 'text-[11px] mt-1 font-semibold text-red-600';
+                el.textContent = '✗ Gagal: ' + e.message;
+            }
+        }
+
+        function handleClassificationModeChange(mode) {
+            db.settings.classificationMode = mode;
+            saveDatabase();
+            showToast('Mode klasifikasi diperbarui.', 'success');
+            renderSettings();
+        }
+
+        function handleAbsoluteThresholdChange(field, value) {
+            if (!db.settings.absoluteThresholds) {
+                db.settings.absoluteThresholds = { reach: 10000, views: 50000, er: 10, followersGained: 100 };
+            }
+            db.settings.absoluteThresholds[field] = safeNum(value) || 1;
+            saveDatabase();
+            showToast('Target threshold disimpan.', 'success');
         }
 
         /* ==========================================
            13. CRUD MODALS & UI HANDLERS
            ========================================== */
         
+        /* ==========================================
+           14. AI VISION - GOOGLE GEMINI SCREENSHOT READER
+           ========================================== */
+        function setAIScreenshotStatus(message, type = 'info') {
+            const statusEl = document.getElementById('ai-screenshot-status');
+            if (!statusEl) return;
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = message;
+            statusEl.className = 'text-[10px] mt-1.5 ' + (
+                type === 'error' ? 'text-red-600' :
+                type === 'success' ? 'text-emerald-600' :
+                'text-purple-500'
+            );
+        }
+
+        function handleScreenshotAIUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const apiKey = db.settings && db.settings.geminiApiKey;
+            if (!apiKey) {
+                showToast('API Key Gemini belum diisi. Buka menu Settings terlebih dahulu.', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            const btn = document.getElementById('ai-screenshot-btn');
+            if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
+            setAIScreenshotStatus('Membaca gambar...', 'info');
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const base64Data = e.target.result.split(',')[1];
+                    setAIScreenshotStatus('Menganalisis screenshot dengan AI, mohon tunggu...', 'info');
+                    const result = await analyzeScreenshotWithGemini(base64Data, file.type, apiKey);
+
+                    if (result) {
+                        applyAIResultToForm(result);
+                        setAIScreenshotStatus('Selesai! Form terisi otomatis — periksa & sesuaikan angka sebelum menyimpan.', 'success');
+                        showToast('Form terisi dari screenshot. Silakan periksa ulang sebelum menyimpan.', 'success');
+                    }
+                } catch (err) {
+                    console.error('AI Screenshot error:', err);
+                    setAIScreenshotStatus('Gagal membaca screenshot: ' + err.message, 'error');
+                    showToast('Gagal menganalisis screenshot.', 'error');
+                } finally {
+                    if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
+                    event.target.value = '';
+                }
+            };
+            reader.onerror = function() {
+                setAIScreenshotStatus('Gagal membaca file gambar.', 'error');
+                if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function analyzeScreenshotWithGemini(base64ImageData, mimeType, apiKey) {
+            const prompt = `Kamu membaca screenshot dashboard analitik media sosial (bisa dari Instagram Insights, YouTube Studio, TikTok Analytics, atau Facebook Insights/Meta Business Suite).
+
+Baca angka-angka yang benar-benar TERLIHAT di gambar ini. Kembalikan HANYA JSON valid, tanpa markdown, tanpa penjelasan tambahan, persis dengan struktur berikut:
+
+{
+  "contentTitle": "judul/caption konten kalau terlihat jelas, kalau tidak ada isi string kosong",
+  "views": 0,
+  "reach": 0,
+  "likes": 0,
+  "comments": 0,
+  "shares": 0,
+  "saves": 0,
+  "followersGained": 0
+}
+
+Aturan penting:
+- Semua nilai angka harus INTEGER murni (contoh: 12500), bukan string, bukan yang ada koma/titik/singkatan seperti "12.5K" — konversikan singkatan ke angka penuh.
+- Kalau suatu metrik tidak terlihat sama sekali di gambar, isi dengan 0. JANGAN mengarang atau menebak angka yang tidak ada di gambar.
+- Jangan tambahkan field lain selain yang diminta di atas.`;
+
+            const text = await geminiRequest([{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64ImageData } }], true);
+            let parsed;
+            try { parsed = JSON.parse(text.replace(/```json|```/g, '').trim()); }
+            catch (e) { throw new Error('Respons AI tidak dalam format JSON yang valid.'); }
+            return parsed;
+        }
+
+        function applyAIResultToForm(result) {
+            if (!result) return;
+            const fieldMap = {
+                views: 'form-views',
+                reach: 'form-reach',
+                likes: 'form-likes',
+                comments: 'form-comments',
+                shares: 'form-shares',
+                saves: 'form-saves',
+                followersGained: 'form-followers-gained'
+            };
+            Object.keys(fieldMap).forEach(key => {
+                const el = document.getElementById(fieldMap[key]);
+                if (el && result[key] !== undefined && result[key] !== null) {
+                    el.value = safeNum(result[key]);
+                }
+            });
+            const titleEl = document.getElementById('form-content-title');
+            if (titleEl && !titleEl.value && result.contentTitle) {
+                titleEl.value = result.contentTitle;
+            }
+        }
+
+
+        /* ==========================================
+           15. AI INSIGHT, CHAT, FORECAST, REMINDER, PAGINATION
+           ========================================== */
+        const PAGE_SIZE = 25;
+        let contentPage = 1;
+        function paginate(items, page) {
+            const max = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+            if (page > max) page = max;
+            return items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+        }
+        function paginationControls(total, page, fn = 'changeContentPage') {
+            const max = Math.max(1, Math.ceil(total / PAGE_SIZE));
+            page = Math.min(page, max);
+            return `<div class="flex items-center justify-between text-xs text-slate-500"><span>Menampilkan ${(page - 1) * PAGE_SIZE + 1}-${Math.min(page * PAGE_SIZE, total)} dari ${total}</span><div class="flex items-center gap-2"><button onclick="${fn}(-1)" ${page <= 1 ? 'disabled' : ''} class="px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 disabled:opacity-40">Prev</button><span>Hal ${page}/${max}</span><button onclick="${fn}(1)" ${page >= max ? 'disabled' : ''} class="px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 disabled:opacity-40">Next</button></div></div>`;
+        }
+        function changeContentPage(d) { contentPage = Math.max(1, contentPage + d); renderContentIntelligence(); }
+
+        const GEMINI_DEFAULT_MODELS = ['gemini-3.1-flash-lite', 'gemini-3-flash-preview', 'gemini-2.5-flash'];
+        let geminiWorkingModel = null;
+        async function geminiRequest(parts, jsonMode) {
+            const apiKey = db.settings && db.settings.geminiApiKey;
+            if (!apiKey) throw new Error('API Key Gemini belum diisi di menu Settings.');
+            const custom = ((db.settings && db.settings.geminiModel) || '').trim();
+            const models = [...new Set([custom, geminiWorkingModel, ...GEMINI_DEFAULT_MODELS].filter(Boolean))];
+            let lastErr = 'Tidak ada model Gemini yang tersedia.';
+            for (const model of models) {
+                const body = { contents: [{ parts }] };
+                if (jsonMode) body.generationConfig = { responseMimeType: 'application/json' };
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    geminiWorkingModel = model;
+                    return (data?.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+                }
+                lastErr = `${model}: ${data?.error?.message || 'HTTP ' + res.status}`;
+                if (res.status !== 404 && res.status !== 429) throw new Error(lastErr);
+            }
+            throw new Error(lastErr);
+        }
+        async function callGeminiText(prompt) { return geminiRequest([{ text: prompt }], false); }
+        function formatAIText(t) {
+            return escapeHTML(t).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+        }
+        function buildAIDataContext(periodDays) {
+            computeAllContentScores();
+            const platformSummary = calculatePlatformRankings(periodDays).map(p => ({ platform: p.name, followers: p.followers, growth: p.growth, views: p.views, reach: p.reach, engagement: p.engagement, er: +p.engagementRate.toFixed(2), contents: p.contentCount, score: p.score }));
+            const recentContent = [...db.content].sort((a, b) => new Date(b.publishedDate) - new Date(a.publishedDate)).slice(0, 80).map(c => ({ platform: c.platformId, title: (c.contentTitle || '').slice(0, 60), date: c.publishedDate, views: safeNum(c.views), reach: safeNum(c.reach), likes: safeNum(c.likes), comments: safeNum(c.comments), shares: safeNum(c.shares), saves: safeNum(c.saves), followersGained: safeNum(c.followersGained), score: c.computedScore || 0 }));
+            const followerSnapshots = [...db.growth].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 40).map(g => ({ platform: g.platformId, date: g.date, followers: safeNum(g.followers) }));
+            return JSON.stringify({ today: new Date().toISOString().split('T')[0], period: periodDays, platformSummary, recentContent, followerSnapshots });
+        }
+        async function generateAIInsight() {
+            const box = document.getElementById('ai-insight-body');
+            const btn = document.getElementById('ai-insight-btn');
+            if (!box || !btn) return;
+            btn.disabled = true;
+            box.innerHTML = '<span class="text-slate-400">Menganalisis data...</span>';
+            try {
+                const text = await callGeminiText(`Kamu analis media sosial. Berdasarkan data JSON berikut (angka diinput manual pengguna), tulis ringkasan Bahasa Indonesia: 1) kondisi umum, 2) platform dan konten terbaik/terlemah, 3) tiga rekomendasi konkret. Maksimal 200 kata, gunakan **tebal** untuk poin penting, jangan mengarang data.\n\nDATA:\n${buildAIDataContext(getActivePeriodDays())}`);
+                box.innerHTML = formatAIText(text);
+            } catch (e) {
+                box.innerHTML = `<span class="text-red-600">${escapeHTML(e.message)}</span>`;
+            }
+            btn.disabled = false;
+        }
+
+        let aiChatHistory = [];
+        function renderAIChat() {
+            const main = document.getElementById('main-content-area');
+            if (!main) return;
+            main.innerHTML = `<div class="max-w-3xl mx-auto bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col" style="height:70vh">
+                <div class="p-4 border-b border-slate-100"><h3 class="text-base font-bold text-slate-800">Tanya Data (AI)</h3><p class="text-[11px] text-slate-400">Ringkasan data akunmu dikirim ke Google Gemini untuk menjawab. Contoh: "Platform mana yang paling cepat tumbuh?"</p></div>
+                <div id="ai-chat-log" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs"></div>
+                <div class="p-3 border-t border-slate-100 flex gap-2"><input id="ai-chat-input" type="text" placeholder="Tulis pertanyaan..." onkeydown="if(event.key==='Enter')sendAIChat()" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none"><button onclick="sendAIChat()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 rounded-lg">Kirim</button></div>
+            </div>`;
+            paintAIChat();
+        }
+        function paintAIChat() {
+            const log = document.getElementById('ai-chat-log');
+            if (!log) return;
+            log.innerHTML = aiChatHistory.length ? aiChatHistory.map(m => `<div class="flex ${m.role === 'user' ? 'justify-end' : ''}"><div class="max-w-[85%] px-3 py-2 rounded-lg ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}">${formatAIText(m.text)}</div></div>`).join('') : '<p class="text-slate-400 italic">Belum ada percakapan.</p>';
+            log.scrollTop = log.scrollHeight;
+        }
+        async function sendAIChat() {
+            const input = document.getElementById('ai-chat-input');
+            const q = (input?.value || '').trim();
+            if (!q) return;
+            input.value = '';
+            aiChatHistory.push({ role: 'user', text: q }, { role: 'ai', text: '...' });
+            paintAIChat();
+            const history = aiChatHistory.slice(0, -1).slice(-8).map(m => `${m.role === 'user' ? 'Pengguna' : 'Asisten'}: ${m.text}`).join('\n');
+            try {
+                aiChatHistory[aiChatHistory.length - 1].text = await callGeminiText(`Kamu asisten analitik media sosial. Jawab Bahasa Indonesia, singkat, hanya berdasarkan data JSON berikut. Jika data tidak cukup, katakan terus terang.\n\nDATA:\n${buildAIDataContext('all')}\n\nPERCAKAPAN:\n${history}\nAsisten:`);
+            } catch (e) {
+                aiChatHistory[aiChatHistory.length - 1].text = 'Error: ' + e.message;
+            }
+            paintAIChat();
+        }
+
+        function updateGrowthReminderBadge() {
+            const el = document.getElementById('growth-reminder-badge');
+            if (!el) return;
+            let msg = '';
+            if (db.growth.length === 0) {
+                if (db.content.length > 0) msg = '!';
+            } else {
+                const last = Math.max(...db.growth.map(g => new Date(g.date).getTime()));
+                const days = Math.floor((Date.now() - last) / 86400000);
+                if (days > 7) msg = days + 'h';
+            }
+            el.textContent = msg;
+            el.title = msg ? 'Snapshot followers perlu diperbarui' : '';
+            el.classList.toggle('hidden', !msg);
+        }
+
+function growthRegression(pid) {
+            const pts = db.growth.filter(g => g.platformId === pid).map(g => ({ t: new Date(g.date).getTime() / 86400000, y: safeNum(g.followers) }));
+            if (pts.length < 3) return null;
+            const n = pts.length, mx = pts.reduce((a, q) => a + q.t, 0) / n, my = pts.reduce((a, q) => a + q.y, 0) / n;
+            let sxx = 0, sxy = 0;
+            pts.forEach(q => { sxx += (q.t - mx) ** 2; sxy += (q.t - mx) * (q.y - my); });
+            return sxx === 0 ? null : { slope: sxy / sxx, mx, my };
+        }
+        function makeGrowthChart(ctx, cfg) {
+            const labels = cfg.data.labels, n = labels.length;
+            if (n > 0) {
+                const lastDay = new Date(labels[n - 1]).getTime() / 86400000, offsets = [30, 60, 90];
+                const futureLabels = offsets.map(d => new Date((lastDay + d) * 86400000).toISOString().split('T')[0]);
+                const extra = [];
+                cfg.data.datasets.forEach(ds => {
+                    const plat = db.platforms.find(p => p.name === ds.label), r = plat && growthRegression(plat.id);
+                    if (!r || ds.data[n - 1] === null) return;
+                    const proj = offsets.map(d => Math.max(0, Math.round(r.my + r.slope * (lastDay + d - r.mx))));
+                    extra.push({ label: ds.label + ' (proyeksi)', data: new Array(n - 1).fill(null).concat([ds.data[n - 1]], proj), borderColor: ds.borderColor, borderDash: [5, 5], pointRadius: 2, fill: false, tension: 0, spanGaps: true });
+                });
+                if (extra.length) {
+                    cfg.data.datasets.forEach(ds => ds.data.push(null, null, null));
+                    labels.push(...futureLabels);
+                    cfg.data.datasets.push(...extra);
+                }
+            }
+            return new Chart(ctx, cfg);
+        }
+        function renderGrowthForecast() {
+            const container = document.querySelector('#main-content-area > div');
+            if (!container) return;
+            const note = (name, txt) => `<tr><td class="p-3 font-semibold text-slate-800">${name}</td><td class="p-3 text-slate-400 italic" colspan="5">${txt}</td></tr>`;
+            const rows = db.platforms.map(p => {
+                const pts = db.growth.filter(g => g.platformId === p.id).map(g => ({ t: new Date(g.date).getTime() / 86400000, y: safeNum(g.followers) })).sort((a, b) => a.t - b.t);
+                if (pts.length < 3) return note(p.name, `Butuh minimal 3 snapshot (baru ${pts.length}).`);
+                const n = pts.length, mx = pts.reduce((a, q) => a + q.t, 0) / n, my = pts.reduce((a, q) => a + q.y, 0) / n;
+                let sxx = 0, sxy = 0, syy = 0;
+                pts.forEach(q => { sxx += (q.t - mx) ** 2; sxy += (q.t - mx) * (q.y - my); syy += (q.y - my) ** 2; });
+                if (sxx === 0) return note(p.name, 'Semua snapshot bertanggal sama.');
+                const slope = sxy / sxx, r2 = syy === 0 ? 1 : (sxy * sxy) / (sxx * syy), lastT = pts[n - 1].t;
+                const proj = d => Math.max(0, Math.round(my + slope * (lastT + d - mx))).toLocaleString();
+                const conf = r2 >= 0.8 ? 'Tinggi' : r2 >= 0.5 ? 'Sedang' : 'Rendah';
+                return `<tr><td class="p-3 font-semibold text-slate-800">${p.name}</td><td class="p-3">${pts[n - 1].y.toLocaleString()}</td><td class="p-3 font-semibold ${slope >= 0 ? 'text-emerald-600' : 'text-red-600'}">${slope >= 0 ? '+' : ''}${slope.toFixed(1)}/hari</td><td class="p-3">${proj(30)}</td><td class="p-3">${proj(90)}</td><td class="p-3">${conf} (R² ${r2.toFixed(2)})</td></tr>`;
+            }).join('');
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden';
+            card.innerHTML = `<div class="p-5 border-b border-slate-100"><h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Prediksi Tren Followers</h4><p class="text-[11px] text-slate-400 mt-1">Estimasi sederhana (regresi linear dari snapshot), bukan jaminan. Makin banyak snapshot, makin akurat.</p></div><div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead><tr class="bg-slate-50 text-slate-500 uppercase tracking-wider"><th class="p-3 font-semibold">Platform</th><th class="p-3 font-semibold">Terakhir</th><th class="p-3 font-semibold">Laju</th><th class="p-3 font-semibold">+30 Hari</th><th class="p-3 font-semibold">+90 Hari</th><th class="p-3 font-semibold">Keyakinan</th></tr></thead><tbody class="divide-y divide-slate-100">${rows}</tbody></table></div>`;
+            container.insertBefore(card, container.lastElementChild);
+        }
+
+        function populateTopicSuggestions() {
+            const datalist = document.getElementById('topic-suggestions');
+            if (!datalist) return;
+            const uniqueTopics = [...new Set(db.content.map(c => (c.topic || '').trim()).filter(Boolean))].sort();
+            datalist.innerHTML = uniqueTopics.map(t => `<option value="${escapeHTML(t)}"></option>`).join('');
+        }
+
         function openAddContentModal() {
             document.getElementById('content-modal-title').textContent = 'Add New Content';
             document.getElementById('content-form').reset();
             document.getElementById('form-content-internal-id').value = '';
             document.getElementById('form-published-date').value = new Date().toISOString().split('T')[0];
+            populateTopicSuggestions();
             document.getElementById('content-modal').classList.remove('hidden');
         }
 
@@ -2579,11 +3132,32 @@
             document.getElementById('form-watch-time').value = c.watchTime || 0;
             document.getElementById('form-followers-gained').value = c.followersGained || 0;
 
+            populateTopicSuggestions();
             document.getElementById('content-modal').classList.remove('hidden');
         }
 
         function closeContentModal() {
             document.getElementById('content-modal').classList.add('hidden');
+        }
+
+        function validateContentSanity(record) {
+            const warnings = [];
+            const views = safeNum(record.views);
+            const reach = safeNum(record.reach);
+
+            if (views > 0 && safeNum(record.likes) > views) {
+                warnings.push(`Likes (${safeNum(record.likes).toLocaleString()}) melebihi Views (${views.toLocaleString()}).`);
+            }
+            if (views > 0 && safeNum(record.comments) > views) {
+                warnings.push(`Comments (${safeNum(record.comments).toLocaleString()}) melebihi Views (${views.toLocaleString()}).`);
+            }
+            if (reach > 0 && safeNum(record.followersGained) > reach) {
+                warnings.push(`Followers Gained (${safeNum(record.followersGained).toLocaleString()}) melebihi Reach (${reach.toLocaleString()}).`);
+            }
+            if (views === 0 && reach === 0 && (safeNum(record.likes) > 0 || safeNum(record.comments) > 0 || safeNum(record.shares) > 0)) {
+                warnings.push('Ada interaksi (likes/comments/shares) tapi Views dan Reach masih 0.');
+            }
+            return warnings;
         }
 
         function handleContentFormSubmit(event) {
@@ -2616,6 +3190,12 @@
                 followersGained: safeNum(document.getElementById('form-followers-gained').value),
                 source: 'manual'
             };
+
+            const sanityWarnings = validateContentSanity(record);
+            if (sanityWarnings.length > 0) {
+                const proceed = confirm('Ditemukan angka yang kemungkinan tidak wajar:\n\n- ' + sanityWarnings.join('\n- ') + '\n\nTetap simpan data ini?');
+                if (!proceed) return;
+            }
 
             const isDuplicate = db.content.some(c =>
                 c.internalId !== record.internalId &&
